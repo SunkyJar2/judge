@@ -23,8 +23,19 @@ const ui = {
   forumCategory: document.querySelector("#forum-category"),
   accountDialog: document.querySelector("#account-dialog"),
   accountForm: document.querySelector("#account-form"),
+  googleAuthSection: document.querySelector("#google-auth-section"),
+  googleAuthButton: document.querySelector("#google-auth-button"),
+  googleAuthLabel: document.querySelector("#google-auth-label"),
+  accountUsernameGroup: document.querySelector("#account-username-group"),
+  accountUsernameLabel: document.querySelector("#account-username-label"),
   accountUsername: document.querySelector("#account-username"),
+  accountEmailGroup: document.querySelector("#account-email-group"),
+  accountEmail: document.querySelector("#account-email"),
+  accountPasswordGroup: document.querySelector("#account-password-group"),
   accountPassword: document.querySelector("#account-password"),
+  accountConfirmGroup: document.querySelector("#account-confirm-group"),
+  accountConfirmLabel: document.querySelector("#account-confirm-label"),
+  accountConfirmCode: document.querySelector("#account-confirm-code"),
   accountTitle: document.querySelector("#account-dialog-title"),
   accountDescription: document.querySelector("#account-dialog-description"),
   accountError: document.querySelector("#account-form-error"),
@@ -50,13 +61,23 @@ const ui = {
   adminEditFields: document.querySelector("#admin-edit-fields"),
   adminEditError: document.querySelector("#admin-edit-error"),
   adminEditSubmit: document.querySelector("#admin-edit-submit"),
+  adminAuthForm: document.querySelector("#admin-auth-form"),
+  adminAuthError: document.querySelector("#admin-auth-error"),
+  adminAuthSubmit: document.querySelector("#admin-auth-submit"),
+  adminFirebaseSnippet: document.querySelector("#admin-firebase-snippet"),
 };
 
+const EMAIL_CHALLENGE_STORAGE_KEY = "untitled-judge-email-challenge";
 let problems = [];
 let progress = {};
 let submissions = [];
 let currentUser = null;
+let authConfig = { firebase: { enabled: false }, emailConfirmation: { enabled: false, mode: "unconfigured" } };
 let authMode = "login";
+let pendingChallenge = null;
+let pendingFirebaseIdToken = "";
+let firebaseClientPromise = null;
+let firebaseClientKey = "";
 let selectedProgress = "all";
 let activeProblemId = "";
 let activeForumThreadId = 0;
@@ -149,6 +170,8 @@ function showFormError(element, message) {
 function closeAccountDialog() {
   ui.accountDialog.close();
   ui.accountForm.reset();
+  pendingChallenge = null;
+  pendingFirebaseIdToken = "";
   showFormError(ui.accountError, "");
 }
 
@@ -196,6 +219,7 @@ async function loadCurrentUser() {
   const result = await apiRequest("/api/auth/me");
   currentUser = result.user;
   progress = result.progress || {};
+  if (result.authConfig) authConfig = result.authConfig;
 }
 
 function renderCounts() {
@@ -411,19 +435,205 @@ function renderProblems() {
   renderCounts();
 }
 
+async function getFirebaseClient() {
+  const fb = authConfig?.firebase;
+  if (!fb?.enabled || !fb.apiKey || !fb.authDomain || !fb.projectId) {
+    throw new Error("Firebase is not configured yet. The administrator can add Firebase keys in the Admin page.");
+  }
+  const cacheKey = `${fb.apiKey}:${fb.authDomain}:${fb.projectId}:${fb.appId || ""}`;
+  if (!firebaseClientPromise || firebaseClientKey !== cacheKey) {
+    firebaseClientKey = cacheKey;
+    firebaseClientPromise = (async () => {
+      const [{ initializeApp, getApps }, authModule] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"),
+      ]);
+      const config = {
+        apiKey: fb.apiKey,
+        authDomain: fb.authDomain,
+        projectId: fb.projectId,
+        ...(fb.appId ? { appId: fb.appId } : {}),
+      };
+      const existing = getApps().find((item) => item.name === "untitled-judge");
+      const app = existing || initializeApp(config, "untitled-judge");
+      const auth = authModule.getAuth(app);
+      return { auth, authModule };
+    })().catch((error) => {
+      firebaseClientPromise = null;
+      throw error;
+    });
+  }
+  return firebaseClientPromise;
+}
+
+function finishAuthSession(result) {
+  currentUser = result.user;
+  progress = result.progress || {};
+  if (result.authConfig) authConfig = result.authConfig;
+  submissions = [];
+  closeAccountDialog();
+  userChanged();
+  if (location.hash === "#status") renderStatusPage();
+  if (location.hash === "#progress") renderProgressPage();
+  if (location.hash === "#forum") loadForum();
+}
+
 function openAuthDialog(mode = "login") {
   authMode = mode;
-  ui.accountTitle.textContent = mode === "register" ? "Create account" : "Log in";
-  ui.accountDescription.textContent = mode === "register"
-    ? "Pick a username and password to keep your progress, submissions, and forum posts."
-    : "Log in to save submissions and join the forum.";
-  ui.accountSubmit.textContent = mode === "register" ? "CREATE ACCOUNT" : "LOG IN";
-  ui.accountSwitch.textContent = mode === "register" ? "Already registered? Log in" : "Need an account? Create one";
-  ui.accountPassword.autocomplete = mode === "register" ? "new-password" : "current-password";
-  ui.accountPassword.minLength = mode === "register" ? 10 : 1;
+  const isRegister = mode === "register";
+  const isConfirmCode = mode === "confirm-code";
+  const isConfirmFirebase = mode === "confirm-firebase";
+  const isGoogleUsername = mode === "google-username";
+
+  ui.googleAuthSection.classList.toggle("hidden", isConfirmCode || isConfirmFirebase || isGoogleUsername);
+  ui.googleAuthLabel.textContent = isRegister ? "SIGN UP WITH GOOGLE" : "CONTINUE WITH GOOGLE";
+
+  ui.accountUsernameGroup.classList.toggle("hidden", isConfirmCode || isConfirmFirebase);
+  ui.accountUsername.required = !isConfirmCode && !isConfirmFirebase;
+  ui.accountUsernameLabel.textContent = isRegister || isGoogleUsername ? "USERNAME" : "USERNAME OR EMAIL";
+  if (isRegister || isGoogleUsername) {
+    ui.accountUsername.setAttribute("pattern", "[A-Za-z0-9_]+");
+    ui.accountUsername.maxLength = 24;
+  } else {
+    ui.accountUsername.removeAttribute("pattern");
+    ui.accountUsername.maxLength = 254;
+  }
+
+  ui.accountEmailGroup.classList.toggle("hidden", !isRegister);
+  ui.accountEmail.required = isRegister;
+
+  ui.accountPasswordGroup.classList.toggle("hidden", isConfirmCode || isConfirmFirebase || isGoogleUsername);
+  ui.accountPassword.required = !isConfirmCode && !isConfirmFirebase && !isGoogleUsername;
+  ui.accountPassword.autocomplete = isRegister ? "new-password" : "current-password";
+  ui.accountPassword.minLength = isRegister ? 10 : 1;
+
+  ui.accountConfirmGroup.classList.toggle("hidden", !isConfirmCode);
+  ui.accountConfirmCode.required = isConfirmCode;
+
+  if (isConfirmCode) {
+    ui.accountTitle.textContent = "Confirm login";
+    ui.accountDescription.textContent = `Enter the 6-digit confirmation code sent to ${pendingChallenge?.maskedEmail || "your email"}.`;
+    ui.accountSubmit.textContent = "CONFIRM & LOG IN";
+    ui.accountSubmit.classList.remove("hidden");
+    ui.accountSwitch.textContent = "Back to log in";
+  } else if (isConfirmFirebase) {
+    ui.accountTitle.textContent = "Check your email";
+    ui.accountDescription.textContent = `We sent a login confirmation link to ${pendingChallenge?.maskedEmail || "your email"}. Open the link in your email to finish signing in.`;
+    ui.accountSubmit.classList.add("hidden");
+    ui.accountSwitch.textContent = "Back to log in";
+  } else if (isGoogleUsername) {
+    ui.accountTitle.textContent = "Choose a username";
+    ui.accountDescription.textContent = "Pick a judge username (3 to 24 letters, numbers, or underscores) to finish connecting your Google account.";
+    ui.accountSubmit.textContent = "COMPLETE ACCOUNT";
+    ui.accountSubmit.classList.remove("hidden");
+    ui.accountSwitch.textContent = "Cancel";
+  } else {
+    ui.accountTitle.textContent = isRegister ? "Create account" : "Log in";
+    ui.accountDescription.textContent = isRegister
+      ? "Sign up with Google, or enter a username, email, and password."
+      : "Log in with Google or your account credentials. Email confirmation is requested when logging in.";
+    ui.accountSubmit.textContent = isRegister ? "CREATE ACCOUNT" : "LOG IN";
+    ui.accountSubmit.classList.remove("hidden");
+    ui.accountSwitch.textContent = isRegister ? "Already registered? Log in" : "Need an account? Create one";
+  }
+
   showFormError(ui.accountError, "");
   if (!ui.accountDialog.open) ui.accountDialog.showModal();
-  ui.accountUsername.focus();
+  if (isConfirmCode) ui.accountConfirmCode.focus();
+  else if (!isConfirmFirebase) ui.accountUsername.focus();
+}
+
+async function handleGoogleAuthClick() {
+  ui.googleAuthButton.disabled = true;
+  showFormError(ui.accountError, "Opening Google sign-in…");
+  try {
+    const { auth, authModule } = await getFirebaseClient();
+    const provider = new authModule.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const credential = await authModule.signInWithPopup(auth, provider);
+    const idToken = await credential.user.getIdToken();
+    const result = await apiRequest("/api/auth/firebase", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+    if (result.needsUsername) {
+      pendingFirebaseIdToken = idToken;
+      ui.accountUsername.value = result.suggestedUsername || "";
+      openAuthDialog("google-username");
+      return;
+    }
+    finishAuthSession(result);
+  } catch (error) {
+    if (error?.code === "auth/popup-closed-by-user") {
+      showFormError(ui.accountError, "Google sign-in was cancelled.");
+    } else {
+      showFormError(ui.accountError, error.message || "Google sign-in failed.");
+    }
+  } finally {
+    ui.googleAuthButton.disabled = false;
+  }
+}
+
+async function sendFirebaseLoginConfirmationLink(challenge) {
+  const { auth, authModule } = await getFirebaseClient();
+  const redirectUrl = `${window.location.origin}${window.location.pathname}`;
+  await authModule.sendSignInLinkToEmail(auth, challenge.email, {
+    url: redirectUrl,
+    handleCodeInApp: true,
+  });
+  try {
+    localStorage.setItem(EMAIL_CHALLENGE_STORAGE_KEY, JSON.stringify({
+      challengeToken: challenge.challengeToken,
+      email: challenge.email,
+    }));
+  } catch {}
+}
+
+async function completeFirebaseEmailLinkIfPresent() {
+  const searchParams = new URLSearchParams(window.location.search);
+  if (!searchParams.get("oobCode") || searchParams.get("mode") !== "signIn") return;
+  try {
+    const { auth, authModule } = await getFirebaseClient();
+    if (!authModule.isSignInWithEmailLink(auth, window.location.href)) return;
+    let stored = null;
+    try {
+      stored = JSON.parse(localStorage.getItem(EMAIL_CHALLENGE_STORAGE_KEY) || "null");
+    } catch {}
+    const email = stored?.email || window.prompt("Confirm your email address to complete login:");
+    if (!email) return;
+    const credential = await authModule.signInWithEmailLink(auth, email.trim(), window.location.href);
+    const firebaseIdToken = await credential.user.getIdToken();
+    try {
+      localStorage.removeItem(EMAIL_CHALLENGE_STORAGE_KEY);
+    } catch {}
+    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash}`);
+    if (stored?.challengeToken) {
+      const result = await apiRequest("/api/auth/login/verify", {
+        method: "POST",
+        body: JSON.stringify({
+          challengeToken: stored.challengeToken,
+          firebaseIdToken,
+        }),
+      });
+      finishAuthSession(result);
+    } else {
+      const result = await apiRequest("/api/auth/firebase", {
+        method: "POST",
+        body: JSON.stringify({ idToken: firebaseIdToken }),
+      });
+      if (result.needsUsername) {
+        pendingFirebaseIdToken = firebaseIdToken;
+        ui.accountUsername.value = result.suggestedUsername || "";
+        openAuthDialog("google-username");
+      } else {
+        finishAuthSession(result);
+      }
+    }
+  } catch (error) {
+    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.hash}`);
+    openAuthDialog("login");
+    showFormError(ui.accountError, error.message || "Could not verify the email login link.");
+  }
 }
 
 async function handleAccountSubmit(event) {
@@ -433,21 +643,55 @@ async function handleAccountSubmit(event) {
   submitButton.disabled = true;
   showFormError(ui.accountError, "Please wait…");
   try {
+    if (mode === "google-username") {
+      const result = await apiRequest("/api/auth/firebase", {
+        method: "POST",
+        body: JSON.stringify({
+          idToken: pendingFirebaseIdToken,
+          username: ui.accountUsername.value.trim(),
+        }),
+      });
+      finishAuthSession(result);
+      return;
+    }
+
+    if (mode === "confirm-code") {
+      const result = await apiRequest("/api/auth/login/verify", {
+        method: "POST",
+        body: JSON.stringify({
+          challengeToken: pendingChallenge?.challengeToken || "",
+          code: ui.accountConfirmCode.value.trim(),
+        }),
+      });
+      finishAuthSession(result);
+      return;
+    }
+
+    const payload = {
+      username: ui.accountUsername.value.trim(),
+      password: ui.accountPassword.value,
+      ...(mode === "register" ? { email: ui.accountEmail.value.trim() } : {}),
+    };
     const result = await apiRequest(`/api/auth/${mode}`, {
       method: "POST",
-      body: JSON.stringify({
-        username: ui.accountUsername.value.trim(),
-        password: ui.accountPassword.value,
-      }),
+      body: JSON.stringify(payload),
     });
-    currentUser = result.user;
-    progress = result.progress || {};
-    submissions = [];
-    closeAccountDialog();
-    userChanged();
-    if (location.hash === "#status") renderStatusPage();
-    if (location.hash === "#progress") renderProgressPage();
-    if (location.hash === "#forum") loadForum();
+
+    if (result.confirmationRequired) {
+      pendingChallenge = result;
+      if (result.method === "code") {
+        ui.accountConfirmCode.value = "";
+        openAuthDialog("confirm-code");
+        return;
+      }
+      if (result.method === "firebase") {
+        await sendFirebaseLoginConfirmationLink(result);
+        openAuthDialog("confirm-firebase");
+        return;
+      }
+    }
+
+    finishAuthSession(result);
   } catch (error) {
     showFormError(ui.accountError, error.message);
   } finally {
@@ -692,6 +936,25 @@ async function renderAccountPage() {
       <dl class="account-info-list">
         <div><dt>Username</dt><dd>${escapeHtml(details.username)}</dd></div>
         ${details.isAdmin ? "<div><dt>Account type</dt><dd>Administrator</dd></div>" : ""}
+        <div>
+          <dt>Email (for login confirmation)</dt>
+          <dd>
+            <div>${details.email ? escapeHtml(details.email) : "Not set"}</div>
+            <form id="account-email-form" class="account-email-form">
+              <input class="form-control" id="account-email-update" type="email" maxlength="254" required value="${escapeHtml(details.email || "")}" placeholder="you@example.com">
+              <button class="submit-button" type="submit" id="account-email-submit">${details.email ? "UPDATE EMAIL" : "SAVE EMAIL"}</button>
+            </form>
+            <div id="account-email-error" class="account-form-error" aria-live="polite"></div>
+          </dd>
+        </div>
+        <div>
+          <dt>Google sign-in</dt>
+          <dd>
+            ${details.hasGoogle
+              ? "Connected"
+              : `<button class="plain-button" type="button" data-action="link-google">CONNECT GOOGLE ACCOUNT</button>`}
+          </dd>
+        </div>
         <div><dt>Joined</dt><dd>${escapeHtml(formatDate(details.created_at))}</dd></div>
         <div><dt>Problems solved</dt><dd>${details.solved_count}</dd></div>
         <div><dt>Submissions</dt><dd>${details.submission_count}</dd></div>
@@ -812,7 +1075,88 @@ function renderAdminPage() {
   const canAdmin = Boolean(currentUser?.isAdmin);
   ui.adminProblemForm.classList.toggle("hidden", !canAdmin);
   ui.adminEditForm.classList.toggle("hidden", !canAdmin);
-  if (canAdmin) void loadAdminProblemOptions();
+  ui.adminAuthForm.classList.toggle("hidden", !canAdmin);
+  if (canAdmin) {
+    void loadAdminProblemOptions();
+    void loadAdminAuthSettings();
+  }
+}
+
+async function loadAdminAuthSettings() {
+  showFormError(ui.adminAuthError, "");
+  try {
+    const settings = await apiRequest("/api/admin/auth-settings");
+    document.querySelector("#admin-firebase-api-key").value = settings.firebaseApiKey || "";
+    document.querySelector("#admin-firebase-auth-domain").value = settings.firebaseAuthDomain || "";
+    document.querySelector("#admin-firebase-project-id").value = settings.firebaseProjectId || "";
+    document.querySelector("#admin-firebase-app-id").value = settings.firebaseAppId || "";
+    document.querySelector("#admin-smtp-host").value = settings.smtpHost || "";
+    document.querySelector("#admin-smtp-port").value = settings.smtpPort || 465;
+    document.querySelector("#admin-smtp-user").value = settings.smtpUser || "";
+    document.querySelector("#admin-smtp-pass").value = "";
+    document.querySelector("#admin-smtp-pass").placeholder = settings.hasSmtpPass
+      ? "Saved (leave blank to keep current password)"
+      : "16-character app password or SMTP password";
+    document.querySelector("#admin-smtp-from").value = settings.smtpFrom || "";
+    document.querySelector("#admin-require-email-confirm").checked = settings.requireEmailConfirmation !== false;
+  } catch (error) {
+    showFormError(ui.adminAuthError, error.message);
+  }
+}
+
+function parseFirebaseSnippetInput() {
+  const text = ui.adminFirebaseSnippet.value;
+  if (!text.trim()) return;
+  const extract = (key) => {
+    const match = text.match(new RegExp(`["']?${key}["']?\\s*:\\s*["']([^"']+)["']`));
+    return match ? match[1].trim() : "";
+  };
+  const apiKey = extract("apiKey");
+  const authDomain = extract("authDomain");
+  const projectId = extract("projectId");
+  const appId = extract("appId");
+  if (apiKey) document.querySelector("#admin-firebase-api-key").value = apiKey;
+  if (authDomain) document.querySelector("#admin-firebase-auth-domain").value = authDomain;
+  if (projectId) document.querySelector("#admin-firebase-project-id").value = projectId;
+  if (appId) document.querySelector("#admin-firebase-app-id").value = appId;
+}
+
+async function saveAdminAuthSettings(event) {
+  event.preventDefault();
+  if (!currentUser?.isAdmin) return;
+  ui.adminAuthSubmit.disabled = true;
+  showFormError(ui.adminAuthError, "Saving authentication settings…");
+  try {
+    parseFirebaseSnippetInput();
+    const testEmail = document.querySelector("#admin-smtp-test").value.trim();
+    const result = await apiRequest("/api/admin/auth-settings", {
+      method: "POST",
+      body: JSON.stringify({
+        firebaseApiKey: document.querySelector("#admin-firebase-api-key").value.trim(),
+        firebaseAuthDomain: document.querySelector("#admin-firebase-auth-domain").value.trim(),
+        firebaseProjectId: document.querySelector("#admin-firebase-project-id").value.trim(),
+        firebaseAppId: document.querySelector("#admin-firebase-app-id").value.trim(),
+        smtpHost: document.querySelector("#admin-smtp-host").value.trim(),
+        smtpPort: Number(document.querySelector("#admin-smtp-port").value) || 465,
+        smtpUser: document.querySelector("#admin-smtp-user").value.trim(),
+        smtpPass: document.querySelector("#admin-smtp-pass").value,
+        smtpFrom: document.querySelector("#admin-smtp-from").value.trim(),
+        requireEmailConfirmation: document.querySelector("#admin-require-email-confirm").checked,
+        testEmail,
+      }),
+    });
+    if (result.authConfig) authConfig = result.authConfig;
+    ui.adminFirebaseSnippet.value = "";
+    await loadAdminAuthSettings();
+    showFormError(
+      ui.adminAuthError,
+      testEmail ? `Settings saved and test email sent to ${testEmail}.` : "Authentication and email settings saved."
+    );
+  } catch (error) {
+    showFormError(ui.adminAuthError, error.message);
+  } finally {
+    ui.adminAuthSubmit.disabled = false;
+  }
 }
 
 async function loadAdminProblemOptions() {
@@ -1370,6 +1714,52 @@ async function handleSubmissionRowClick(event) {
   if (row) row.classList.toggle("hidden");
 }
 
+async function saveAccountEmail(event) {
+  event.preventDefault();
+  if (!currentUser) return;
+  const input = document.querySelector("#account-email-update");
+  const submit = document.querySelector("#account-email-submit");
+  const errorElement = document.querySelector("#account-email-error");
+  if (!input || !submit) return;
+  submit.disabled = true;
+  showFormError(errorElement, "");
+  try {
+    await apiRequest("/api/account/email", {
+      method: "POST",
+      body: JSON.stringify({ email: input.value.trim() }),
+    });
+    await renderAccountPage();
+  } catch (error) {
+    showFormError(errorElement, error.message);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function linkGoogleAccount(button) {
+  if (!currentUser) return;
+  const errorElement = document.querySelector("#account-email-error");
+  button.disabled = true;
+  if (errorElement) showFormError(errorElement, "Opening Google sign-in…");
+  try {
+    const { auth, authModule } = await getFirebaseClient();
+    const provider = new authModule.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const credential = await authModule.signInWithPopup(auth, provider);
+    const idToken = await credential.user.getIdToken();
+    await apiRequest("/api/account/email", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+    await renderAccountPage();
+  } catch (error) {
+    if (errorElement) showFormError(errorElement, error.message || "Could not connect Google account.");
+    else window.alert(error.message || "Could not connect Google account.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
 async function initialize() {
   try {
     const response = await apiRequest("/api/problems");
@@ -1383,6 +1773,7 @@ async function initialize() {
       currentUser = null;
       progress = {};
     }
+    await completeFirebaseEmailLinkIfPresent();
     updateAccountControls();
     renderProblems();
     const requestedProblem = new URLSearchParams(location.search).get("problem");
@@ -1438,7 +1829,16 @@ ui.sourceEditor.addEventListener("input", () => {
 });
 ui.submitButton.addEventListener("click", submitCode);
 ui.accountForm.addEventListener("submit", handleAccountSubmit);
-ui.accountSwitch.addEventListener("click", () => openAuthDialog(authMode === "register" ? "login" : "register"));
+ui.googleAuthButton.addEventListener("click", handleGoogleAuthClick);
+ui.accountSwitch.addEventListener("click", () => {
+  if (authMode === "confirm-code" || authMode === "confirm-firebase" || authMode === "google-username") {
+    pendingChallenge = null;
+    pendingFirebaseIdToken = "";
+    openAuthDialog("login");
+  } else {
+    openAuthDialog(authMode === "register" ? "login" : "register");
+  }
+});
 document.querySelector("#open-login").addEventListener("click", () => openAuthDialog("login"));
 document.querySelector("#open-register").addEventListener("click", () => openAuthDialog("register"));
 document.querySelector("#logout-button").addEventListener("click", logout);
@@ -1523,6 +1923,8 @@ ui.submissionList.addEventListener("click", handleSubmissionRowClick);
 ui.forumForm.addEventListener("submit", createThread);
 ui.adminProblemForm.addEventListener("submit", createAdminProblem);
 ui.adminEditForm.addEventListener("submit", saveAdminProblem);
+ui.adminAuthForm.addEventListener("submit", saveAdminAuthSettings);
+ui.adminFirebaseSnippet.addEventListener("input", parseFirebaseSnippetInput);
 ui.adminEditSelect.addEventListener("change", () => {
   void loadAdminProblemForEditing(ui.adminEditSelect.value);
 });
@@ -1544,6 +1946,7 @@ ui.threadDetail.addEventListener("change", (event) => {
 document.body.addEventListener("submit", (event) => {
   if (event.target.matches("#reply-form")) createReply(event);
   if (event.target.matches("#avatar-form")) uploadProfileAvatar(event);
+  if (event.target.matches("#account-email-form")) void saveAccountEmail(event);
 });
 document.body.addEventListener("click", (event) => {
   const friendButton = event.target.closest("[data-friend-action]");
@@ -1552,6 +1955,8 @@ document.body.addEventListener("click", (event) => {
     return;
   }
   if (event.target.closest('[data-action="remove-avatar"]')) void changeProfileAvatar();
+  const linkGoogleBtn = event.target.closest('[data-action="link-google"]');
+  if (linkGoogleBtn) void linkGoogleAccount(linkGoogleBtn);
 });
 window.addEventListener("hashchange", handleRoute);
 document.addEventListener("keydown", (event) => {

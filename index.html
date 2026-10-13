@@ -228,6 +228,29 @@
             </div>
           </div>
         </form>
+        <form id="admin-auth-form" class="submit-form admin-form hidden">
+          <h2>Authentication &amp; email settings</h2>
+          <p class="admin-help">Connect Firebase for <strong>Continue with Google</strong> and email confirmation, or configure an SMTP server (such as a Gmail App Password) to send 6-digit login confirmation codes directly.</p>
+          <label class="field-label" for="admin-firebase-snippet">QUICK PASTE FIREBASE CONFIG <span>OPTIONAL · PASTE SNIPPET FROM FIREBASE CONSOLE</span></label>
+          <textarea id="admin-firebase-snippet" class="form-control admin-snippet" rows="3" spellcheck="false" placeholder="Paste const firebaseConfig = { apiKey: &quot;...&quot;, authDomain: &quot;...&quot;, projectId: &quot;...&quot; }; to auto-fill below"></textarea>
+          <div class="admin-problem-fields">
+            <label class="admin-field"><span class="field-label">FIREBASE API KEY</span><input class="form-control" id="admin-firebase-api-key" autocomplete="off" placeholder="AIzaSy..."></label>
+            <label class="admin-field"><span class="field-label">FIREBASE AUTH DOMAIN</span><input class="form-control" id="admin-firebase-auth-domain" autocomplete="off" placeholder="your-project.firebaseapp.com"></label>
+            <label class="admin-field"><span class="field-label">FIREBASE PROJECT ID</span><input class="form-control" id="admin-firebase-project-id" autocomplete="off" placeholder="your-project-id"></label>
+            <label class="admin-field"><span class="field-label">FIREBASE APP ID <span>OPTIONAL</span></span><input class="form-control" id="admin-firebase-app-id" autocomplete="off" placeholder="1:123456:web:abcdef"></label>
+          </div>
+          <div class="admin-problem-fields">
+            <label class="admin-field"><span class="field-label">SMTP HOST <span>FOR 6-DIGIT EMAIL CODES</span></span><input class="form-control" id="admin-smtp-host" autocomplete="off" placeholder="smtp.gmail.com"></label>
+            <label class="admin-field"><span class="field-label">SMTP PORT</span><input class="form-control" id="admin-smtp-port" type="number" min="1" max="65535" value="465"></label>
+            <label class="admin-field"><span class="field-label">SMTP USERNAME</span><input class="form-control" id="admin-smtp-user" autocomplete="off" placeholder="you@gmail.com"></label>
+            <label class="admin-field"><span class="field-label">SMTP PASSWORD / APP PASSWORD</span><input class="form-control" id="admin-smtp-pass" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved password"></label>
+            <label class="admin-field"><span class="field-label">FROM EMAIL <span>OPTIONAL</span></span><input class="form-control" id="admin-smtp-from" autocomplete="off" placeholder="Defaults to SMTP username"></label>
+            <label class="admin-field"><span class="field-label">TEST RECIPIENT EMAIL <span>OPTIONAL</span></span><input class="form-control" id="admin-smtp-test" type="email" autocomplete="off" placeholder="Send test code on save"></label>
+          </div>
+          <label class="checkbox-row"><input type="checkbox" id="admin-require-email-confirm" checked><span>Require email confirmation when logging in with username/email and password</span></label>
+          <div id="admin-auth-error" class="account-form-error" aria-live="polite"></div>
+          <button type="submit" class="submit-button" id="admin-auth-submit">SAVE AUTH SETTINGS</button>
+        </form>
       </section>
 
       <section class="page hidden" id="page-forum" data-page="forum">
@@ -281,10 +304,29 @@
       <form id="account-form" class="account-form">
         <div class="account-dialog-heading"><h2 id="account-dialog-title">Log in</h2><button type="button" class="dialog-close" id="close-account-dialog" aria-label="Close">×</button></div>
         <p id="account-dialog-description">Log in to save submissions and join the forum.</p>
-        <label class="field-label" for="account-username">USERNAME</label>
-        <input class="form-control" id="account-username" name="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username">
-        <label class="field-label" for="account-password">PASSWORD</label>
-        <input class="form-control" id="account-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="current-password">
+        <div id="google-auth-section">
+          <button type="button" class="plain-button google-auth-button" id="google-auth-button">
+            <svg class="google-icon" viewBox="0 0 18 18" width="14" height="14" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92a8.78 8.78 0 0 0 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.83.86-3.04.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.96 10.71a5.41 5.41 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/></svg>
+            <span id="google-auth-label">CONTINUE WITH GOOGLE</span>
+          </button>
+          <div class="auth-divider"><span>OR USE EMAIL</span></div>
+        </div>
+        <div id="account-username-group">
+          <label class="field-label" id="account-username-label" for="account-username">USERNAME OR EMAIL</label>
+          <input class="form-control" id="account-username" name="username" required minlength="3" maxlength="254" autocomplete="username">
+        </div>
+        <div id="account-email-group" class="hidden">
+          <label class="field-label" for="account-email">EMAIL ADDRESS <span>FOR LOGIN CONFIRMATION</span></label>
+          <input class="form-control" id="account-email" name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com">
+        </div>
+        <div id="account-password-group">
+          <label class="field-label" for="account-password">PASSWORD</label>
+          <input class="form-control" id="account-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="current-password">
+        </div>
+        <div id="account-confirm-group" class="hidden">
+          <label class="field-label" id="account-confirm-label" for="account-confirm-code">6-DIGIT LOGIN CONFIRMATION CODE</label>
+          <input class="form-control confirm-code-input" id="account-confirm-code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456">
+        </div>
         <div class="account-form-error" id="account-form-error" aria-live="polite"></div>
         <button type="submit" class="submit-button" id="account-submit">LOG IN</button>
         <button type="button" class="plain-button account-switch" id="account-switch">Need an account? Create one</button>

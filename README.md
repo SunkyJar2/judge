@@ -31,10 +31,11 @@ Live instance: <https://untitledjudgeweb.duckdns.org>
 - The judge reports a verdict for each matching `.in` / `.ans` pair, including secret tests. Hidden inputs and answers are never sent to the browser. Output comparison ignores whitespace between tokens.
 
 **Accounts, points & profiles**
-- Create an account to save progress, ratings, submission history, and forum posts on the server.
+- Sign up or log in with **Google (Firebase Authentication)**, or create an account with a username, email, and password.
+- When logging in without Google, the server sends an **email confirmation** (a 6-digit login code via SMTP, or a Firebase Email Link if SMTP is not configured). Registration logs you in immediately without blocking on email verification.
 - Accepted solutions award points once per problem. Archive points rise with module number and set letter; FP problems are worth 300 points; administrators can assign custom problems 50–1000 points. Wrong answers and repeat accepts never subtract or add points.
 - Public profiles show a Codeforces-inspired title (Newbie → Grandmaster), admin status, profile picture, friend count, per-set progress, points rank, and the latest 100 submissions.
-- Upload a PNG, JPEG, GIF, or WebP profile picture (up to 1 MB). The account page shows creation date and activity totals.
+- Upload a PNG, JPEG, GIF, or WebP profile picture (up to 1 MB). The account page shows creation date, activity totals, and lets existing users update their login email or link their Google account.
 - Send, accept, decline, or cancel friend requests; remove friends from the account page.
 
 **Community**
@@ -94,7 +95,7 @@ Folders starting with `.` are skipped. Every `.in` needs a matching `.ans` in th
 
 ## Configuration
 
-All settings are environment variables:
+Settings can be provided as environment variables, and **Firebase + SMTP** can also be configured live from the **Admin** tab in the web UI (persisted in SQLite):
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -104,8 +105,17 @@ All settings are environment variables:
 | `JUDGE_SANDBOX_IMAGE` | `untitled-judge-sandbox:latest` | Image used for compiling and running submissions |
 | `PUBLIC_ORIGIN` | _(empty)_ | Exact public origin, e.g. `https://judge.example.org` |
 | `COOKIE_SECURE` | `false` | Set to `true` when served over HTTPS |
+| `FIREBASE_API_KEY` | _(empty)_ | Firebase Web API key (enables Google Sign-In & Firebase Email Link) |
+| `FIREBASE_AUTH_DOMAIN` | _(empty)_ | Firebase Auth domain, e.g. `your-app.firebaseapp.com` |
+| `FIREBASE_PROJECT_ID` | _(empty)_ | Firebase Project ID (verified on the backend against Google's X.509 keys) |
+| `FIREBASE_APP_ID` | _(empty)_ | Optional Firebase Web App ID |
+| `SMTP_HOST` | _(empty)_ | SMTP server host for 6-digit login confirmation emails (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | `587` | SMTP port (`587` STARTTLS or `465` implicit TLS) |
+| `SMTP_USER` | _(empty)_ | SMTP username / email address |
+| `SMTP_PASS` | _(empty)_ | SMTP password or Gmail 16-character App Password |
+| `SMTP_FROM` | `SMTP_USER` | Optional `From:` header (e.g. `Untitled Judge <you@gmail.com>`) |
 
-The SQLite database stores accounts and profile pictures, friendships, progress, ratings, admin-created problems, forum content, submissions, and hashed login sessions. It persists across restarts and is git-ignored.
+The SQLite database stores accounts and profile pictures, friendships, progress, ratings, admin-created problems, forum content, submissions, login challenges, auth settings, and hashed login sessions. It persists across restarts and is git-ignored.
 
 ## Deployment
 

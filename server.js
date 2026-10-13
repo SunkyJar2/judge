@@ -1,8 +1,10 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const http = require("node:http");
+const https = require("node:https");
 const os = require("node:os");
 const net = require("node:net");
+const tls = require("node:tls");
 const { spawn } = require("node:child_process");
 const crypto = require("node:crypto");
 const { promisify } = require("node:util");
@@ -15,6 +17,15 @@ const CONTAINER_RUNTIME = process.env.CONTAINER_RUNTIME || "podman";
 const JUDGE_SANDBOX_IMAGE = process.env.JUDGE_SANDBOX_IMAGE || "untitled-judge-sandbox:latest";
 const PUBLIC_ORIGIN = process.env.PUBLIC_ORIGIN || "";
 const SECURE_COOKIES = process.env.COOKIE_SECURE === "true";
+const DEFAULT_FIREBASE_API_KEY = process.env.FIREBASE_API_KEY || "";
+const DEFAULT_FIREBASE_AUTH_DOMAIN = process.env.FIREBASE_AUTH_DOMAIN || "";
+const DEFAULT_FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "";
+const DEFAULT_FIREBASE_APP_ID = process.env.FIREBASE_APP_ID || "";
+const DEFAULT_SMTP_HOST = process.env.SMTP_HOST || "";
+const DEFAULT_SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+const DEFAULT_SMTP_USER = process.env.SMTP_USER || "";
+const DEFAULT_SMTP_PASS = process.env.SMTP_PASS || "";
+const DEFAULT_SMTP_FROM = process.env.SMTP_FROM || "";
 const ADMIN_USERNAME = "zal_2008";
 const MAX_SOURCE_BYTES = 128 * 1024;
 const MAX_REQUEST_BYTES = MAX_SOURCE_BYTES + 4096;
@@ -35,10 +46,12 @@ let judgeWorkerRunning = false;
 let activeJudgeUserId = null;
 const authAttempts = new Map();
 const SESSION_LIFETIME = 12 * 60 * 60 * 1000;
+const LOGIN_CHALLENGE_LIFETIME = 10 * 60 * 1000;
 const scrypt = promisify(crypto.scrypt);
 const COOKIE_NAME = "untitled_judge_session";
 const PASSWORD_KEY_LENGTH = 64;
 const TOKEN_PATTERN = /^[0-9a-f]{64}$/;
+const EMAIL_PATTERN = /^[^\s@<>"',;:\\]+@[^\s@<>"',;:\\]+\.[^\s@<>"',;:\\]+$/;
 const LANGUAGES = {
   c: { id: "c", name: "C17", extension: ".c", command: process.env.CC || "gcc", compileArgs: ["-std=c17", "-O2", "-pipe"] },
   cpp: { id: "cpp", name: "C++17", extension: ".cpp", command: process.env.CXX || "g++", compileArgs: ["-std=c++17", "-O2", "-pipe"] },
@@ -69,13 +82,31 @@ database.exec(`
     password_hash TEXT NOT NULL,
     created_at TEXT NOT NULL,
     avatar_mime_type TEXT,
-    avatar_data BLOB
+    avatar_data BLOB,
+    email TEXT,
+    email_key TEXT,
+    firebase_uid TEXT
   );
   CREATE TABLE IF NOT EXISTS auth_sessions (
     token_hash TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL,
     created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS login_challenges (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    email TEXT NOT NULL,
+    method TEXT NOT NULL CHECK (method IN ('code', 'firebase_link')),
+    attempts INTEGER NOT NULL DEFAULT 0,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS site_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS forum_threads (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,6 +153,7 @@ database.exec(`
     problem_id TEXT NOT NULL,
     rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
     updated_at TEXT NOT NULL,
+    updated_by INTEGER,
     PRIMARY KEY (user_id, problem_id)
   );
   CREATE TABLE IF NOT EXISTS admin_problems (
@@ -176,11 +208,19 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS friendships_addressee_status ON friendships(addressee_id, status);
   CREATE INDEX IF NOT EXISTS friendships_requester_status ON friendships(requester_id, status);
   CREATE INDEX IF NOT EXISTS auth_sessions_expires_at ON auth_sessions(expires_at);
+  CREATE INDEX IF NOT EXISTS login_challenges_expires_at ON login_challenges(expires_at);
   CREATE INDEX IF NOT EXISTS problem_ratings_problem_id ON problem_ratings(problem_id);
 `);
 const userColumns = new Set(database.prepare("PRAGMA table_info(users)").all().map((column) => column.name));
 if (!userColumns.has("avatar_mime_type")) database.exec("ALTER TABLE users ADD COLUMN avatar_mime_type TEXT");
 if (!userColumns.has("avatar_data")) database.exec("ALTER TABLE users ADD COLUMN avatar_data BLOB");
+if (!userColumns.has("email")) database.exec("ALTER TABLE users ADD COLUMN email TEXT");
+if (!userColumns.has("email_key")) database.exec("ALTER TABLE users ADD COLUMN email_key TEXT");
+if (!userColumns.has("firebase_uid")) database.exec("ALTER TABLE users ADD COLUMN firebase_uid TEXT");
+database.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON users(email_key) WHERE email_key IS NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS users_firebase_uid ON users(firebase_uid) WHERE firebase_uid IS NOT NULL;
+`);
 if (!database.prepare("PRAGMA table_info(admin_problems)").all().some((column) => column.name === "points")) {
   database.exec("ALTER TABLE admin_problems ADD COLUMN points INTEGER NOT NULL DEFAULT 100");
 }
@@ -201,12 +241,15 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS user_problem_points_user_id ON user_problem_points(user_id);
 `);
 database.prepare("DELETE FROM auth_sessions WHERE expires_at <= ?").run(Date.now());
+database.prepare("DELETE FROM login_challenges WHERE expires_at <= ?").run(Date.now());
 database.prepare(`
   INSERT OR IGNORE INTO site_admins (user_id, granted_at)
   SELECT id, ? FROM users WHERE username_key = ?
 `).run(new Date().toISOString(), ADMIN_USERNAME);
 const sessionCleanupTimer = setInterval(() => {
-  database.prepare("DELETE FROM auth_sessions WHERE expires_at <= ?").run(Date.now());
+  const now = Date.now();
+  database.prepare("DELETE FROM auth_sessions WHERE expires_at <= ?").run(now);
+  database.prepare("DELETE FROM login_challenges WHERE expires_at <= ?").run(now);
 }, 15 * 60 * 1000);
 sessionCleanupTimer.unref();
 
@@ -606,6 +649,362 @@ async function hashPassword(password, salt) {
   return scrypt(password, salt, PASSWORD_KEY_LENGTH, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 });
 }
 
+function validEmail(email) {
+  if (typeof email !== "string") return false;
+  const trimmed = email.trim();
+  return trimmed.length >= 5 && trimmed.length <= 254 &&
+    EMAIL_PATTERN.test(trimmed) && !/[\r\n]/.test(trimmed);
+}
+
+function maskEmail(email) {
+  if (typeof email !== "string" || !email.includes("@")) return "";
+  const [local, domain] = email.split("@");
+  const visible = local.length <= 2 ? local.slice(0, 1) : local.slice(0, 2);
+  return `${visible}${"*".repeat(Math.max(2, Math.min(5, local.length - visible.length)))}@${domain}`;
+}
+
+function getAuthSettings() {
+  const rows = database.prepare("SELECT key, value FROM site_settings").all();
+  const stored = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+  const firebaseApiKey = (stored.firebaseApiKey ?? DEFAULT_FIREBASE_API_KEY).trim();
+  const firebaseAuthDomain = (stored.firebaseAuthDomain ?? DEFAULT_FIREBASE_AUTH_DOMAIN).trim();
+  const firebaseProjectId = (stored.firebaseProjectId ?? DEFAULT_FIREBASE_PROJECT_ID).trim();
+  const firebaseAppId = (stored.firebaseAppId ?? DEFAULT_FIREBASE_APP_ID).trim();
+  const smtpHost = (stored.smtpHost ?? DEFAULT_SMTP_HOST).trim();
+  const smtpPort = Number(stored.smtpPort ?? DEFAULT_SMTP_PORT) || 465;
+  const smtpUser = (stored.smtpUser ?? DEFAULT_SMTP_USER).trim();
+  const smtpPass = stored.smtpPass ?? DEFAULT_SMTP_PASS;
+  const smtpFrom = (stored.smtpFrom ?? DEFAULT_SMTP_FROM).trim() || smtpUser;
+  const requireEmailConfirmation = stored.requireEmailConfirmation !== "false";
+  const firebaseEnabled = Boolean(firebaseApiKey && firebaseAuthDomain && firebaseProjectId);
+  const smtpEnabled = Boolean(smtpHost && smtpUser && smtpPass);
+  return {
+    firebaseApiKey,
+    firebaseAuthDomain,
+    firebaseProjectId,
+    firebaseAppId,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    smtpPass,
+    smtpFrom,
+    requireEmailConfirmation,
+    firebaseEnabled,
+    smtpEnabled,
+  };
+}
+
+function saveAuthSettings(updates) {
+  const now = new Date().toISOString();
+  const upsert = database.prepare(`
+    INSERT INTO site_settings (key, value, updated_at) VALUES (?, ?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+  `);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value === undefined) continue;
+    upsert.run(key, String(value), now);
+  }
+}
+
+function publicAuthConfig() {
+  const settings = getAuthSettings();
+  const emailMode = !settings.requireEmailConfirmation
+    ? "off"
+    : settings.smtpEnabled
+      ? "code"
+      : settings.firebaseEnabled
+        ? "firebase"
+        : "unconfigured";
+  return {
+    firebase: {
+      enabled: settings.firebaseEnabled,
+      apiKey: settings.firebaseApiKey,
+      authDomain: settings.firebaseAuthDomain,
+      projectId: settings.firebaseProjectId,
+      appId: settings.firebaseAppId,
+    },
+    emailConfirmation: {
+      enabled: emailMode !== "off" && emailMode !== "unconfigured",
+      mode: emailMode,
+    },
+  };
+}
+
+let cachedGoogleCerts = { certs: null, expiresAt: 0 };
+
+function httpsJsonRequest(urlString, options = {}) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(urlString);
+    const req = https.request({
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || 443,
+      path: `${parsedUrl.pathname}${parsedUrl.search}`,
+      method: options.method || "GET",
+      headers: options.headers || {},
+      timeout: 8000,
+    }, (res) => {
+      const chunks = [];
+      let total = 0;
+      res.on("data", (chunk) => {
+        total += chunk.length;
+        if (total > 256 * 1024) {
+          req.destroy(new Error("Upstream response too large."));
+          return;
+        }
+        chunks.push(chunk);
+      });
+      res.on("end", () => {
+        const text = Buffer.concat(chunks).toString("utf8");
+        try {
+          resolve({ status: res.statusCode || 0, headers: res.headers, data: JSON.parse(text) });
+        } catch {
+          reject(new Error("Invalid JSON response from authentication provider."));
+        }
+      });
+    });
+    req.on("timeout", () => req.destroy(new Error("Authentication verification timed out.")));
+    req.on("error", reject);
+    if (options.body) req.write(options.body);
+    req.end();
+  });
+}
+
+async function getGooglePublicCerts() {
+  if (cachedGoogleCerts.certs && cachedGoogleCerts.expiresAt > Date.now()) {
+    return cachedGoogleCerts.certs;
+  }
+  const response = await httpsJsonRequest(
+    "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+  );
+  if (response.status !== 200 || !response.data || typeof response.data !== "object") {
+    throw new Error("Could not load Google public certificates for Firebase verification.");
+  }
+  const cacheControl = String(response.headers["cache-control"] || "");
+  const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
+  const maxAgeSeconds = maxAgeMatch ? Math.min(86400, Math.max(60, Number(maxAgeMatch[1]))) : 3600;
+  cachedGoogleCerts = {
+    certs: response.data,
+    expiresAt: Date.now() + maxAgeSeconds * 1000,
+  };
+  return cachedGoogleCerts.certs;
+}
+
+async function verifyFirebaseIdToken(idToken, settings) {
+  if (!settings.firebaseEnabled) {
+    throw Object.assign(new Error("Firebase authentication is not configured on this server yet."), { statusCode: 503 });
+  }
+  if (typeof idToken !== "string" || idToken.length < 50 || idToken.length > 16384) {
+    throw Object.assign(new Error("Invalid Firebase ID token."), { statusCode: 401 });
+  }
+  const parts = idToken.split(".");
+  if (parts.length !== 3) {
+    throw Object.assign(new Error("Malformed Firebase ID token."), { statusCode: 401 });
+  }
+  let header;
+  let claims;
+  try {
+    header = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
+    claims = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+  } catch {
+    throw Object.assign(new Error("Malformed Firebase ID token payload."), { statusCode: 401 });
+  }
+  if (!header || header.alg !== "RS256" || typeof header.kid !== "string") {
+    throw Object.assign(new Error("Unsupported Firebase token signature algorithm."), { statusCode: 401 });
+  }
+  const expectedIssuer = `https://securetoken.google.com/${settings.firebaseProjectId}`;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (!claims || claims.aud !== settings.firebaseProjectId || claims.iss !== expectedIssuer ||
+      typeof claims.sub !== "string" || !claims.sub || claims.sub.length > 128 ||
+      typeof claims.exp !== "number" || claims.exp <= nowSeconds - 30 ||
+      typeof claims.iat !== "number" || claims.iat > nowSeconds + 60) {
+    throw Object.assign(new Error("Firebase ID token claims do not match this project or have expired."), { statusCode: 401 });
+  }
+  const certs = await getGooglePublicCerts();
+  const certPem = certs[header.kid];
+  if (typeof certPem !== "string") {
+    throw Object.assign(new Error("Unknown signing key for Firebase ID token."), { statusCode: 401 });
+  }
+  const publicKey = new crypto.X509Certificate(certPem).publicKey;
+  const signedData = Buffer.from(`${parts[0]}.${parts[1]}`, "utf8");
+  const signature = Buffer.from(parts[2], "base64url");
+  if (!crypto.verify("RSA-SHA256", signedData, publicKey, signature)) {
+    throw Object.assign(new Error("Invalid Firebase ID token signature."), { statusCode: 401 });
+  }
+  return {
+    uid: claims.sub,
+    email: typeof claims.email === "string" ? claims.email.trim() : "",
+    emailVerified: Boolean(claims.email_verified),
+    name: typeof claims.name === "string" ? claims.name.trim() : "",
+  };
+}
+
+function sendSmtpEmail({ host, port, user, pass, from, to, subject, text }) {
+  return new Promise((resolve, reject) => {
+    if (!validEmail(to) || !validEmail(from)) {
+      reject(new Error("Invalid sender or recipient email address."));
+      return;
+    }
+    let socket;
+    let settled = false;
+    let buffer = "";
+    let currentLines = [];
+    let waitingHandler = null;
+
+    const finish = (err) => {
+      if (settled) return;
+      settled = true;
+      try {
+        socket?.destroy();
+      } catch {}
+      if (err) reject(err);
+      else resolve();
+    };
+
+    const readResponse = () => new Promise((res, rej) => {
+      waitingHandler = { res, rej };
+    });
+
+    const onData = (chunk) => {
+      buffer += chunk.toString("utf8");
+      let newlineIndex;
+      while ((newlineIndex = buffer.indexOf("\n")) >= 0) {
+        const line = buffer.slice(0, newlineIndex).replace(/\r$/, "");
+        buffer = buffer.slice(newlineIndex + 1);
+        currentLines.push(line);
+        if (/^\d{3} /.test(line) || (line.length === 3 && /^\d{3}$/.test(line))) {
+          const code = Number(line.slice(0, 3));
+          const message = currentLines.join("\n");
+          currentLines = [];
+          if (waitingHandler) {
+            const { res, rej } = waitingHandler;
+            waitingHandler = null;
+            if (code >= 400) rej(new Error(`SMTP error (${code}): ${message}`));
+            else res({ code, message });
+          }
+        }
+      }
+    };
+
+    const attachSocket = (activeSocket) => {
+      socket = activeSocket;
+      socket.setTimeout(10_000, () => finish(new Error("SMTP connection timed out.")));
+      socket.on("error", (err) => finish(err));
+      socket.on("close", () => {
+        if (!settled) finish(new Error("SMTP connection closed unexpectedly."));
+      });
+      socket.on("data", onData);
+    };
+
+    const sendLine = (line) => {
+      socket.write(`${line}\r\n`);
+    };
+
+    const runProtocol = async () => {
+      try {
+        await readResponse();
+        sendLine("EHLO untitled-judge.local");
+        const ehlo = await readResponse();
+        if (port !== 465 && !(socket instanceof tls.TLSSocket)) {
+          if (!/STARTTLS/i.test(ehlo.message)) {
+            throw new Error("SMTP server does not support STARTTLS on this port.");
+          }
+          sendLine("STARTTLS");
+          await readResponse();
+          socket.removeAllListeners("data");
+          socket.removeAllListeners("error");
+          socket.removeAllListeners("close");
+          socket = await new Promise((res, rej) => {
+            const tlsSocket = tls.connect({ socket, servername: host }, () => res(tlsSocket));
+            tlsSocket.once("error", rej);
+          });
+          attachSocket(socket);
+          sendLine("EHLO untitled-judge.local");
+          await readResponse();
+        }
+        sendLine("AUTH LOGIN");
+        await readResponse();
+        sendLine(Buffer.from(user, "utf8").toString("base64"));
+        await readResponse();
+        sendLine(Buffer.from(pass, "utf8").toString("base64"));
+        await readResponse();
+        sendLine(`MAIL FROM:<${from}>`);
+        await readResponse();
+        sendLine(`RCPT TO:<${to}>`);
+        await readResponse();
+        sendLine("DATA");
+        await readResponse();
+        const safeSubject = String(subject).replace(/[\r\n]+/g, " ").trim();
+        const safeBody = String(text)
+          .replace(/\r?\n/g, "\r\n")
+          .replace(/^\./gm, "..");
+        const message = [
+          `From: "Untitled Judge Web" <${from}>`,
+          `To: <${to}>`,
+          `Subject: ${safeSubject}`,
+          `Date: ${new Date().toUTCString()}`,
+          "MIME-Version: 1.0",
+          "Content-Type: text/plain; charset=utf-8",
+          "",
+          safeBody,
+          ".",
+        ].join("\r\n");
+        sendLine(message);
+        await readResponse();
+        sendLine("QUIT");
+        finish();
+      } catch (err) {
+        finish(err);
+      }
+    };
+
+    const initialSocket = port === 465
+      ? tls.connect({ host, port, servername: host })
+      : net.connect({ host, port });
+    attachSocket(initialSocket);
+    void runProtocol();
+  });
+}
+
+async function sendLoginCodeEmail(settings, toEmail, username, code) {
+  await sendSmtpEmail({
+    host: settings.smtpHost,
+    port: settings.smtpPort,
+    user: settings.smtpUser,
+    pass: settings.smtpPass,
+    from: settings.smtpFrom || settings.smtpUser,
+    to: toEmail,
+    subject: `Untitled Judge login confirmation code: ${code}`,
+    text: [
+      `Hello ${username},`,
+      "",
+      "Someone is signing in to your Untitled Judge Web account.",
+      "Enter this 6-digit confirmation code to finish logging in:",
+      "",
+      `    ${code}`,
+      "",
+      "This code expires in 10 minutes. If you did not try to log in, please change your password.",
+    ].join("\n"),
+  });
+}
+
+function suggestAvailableUsername(rawText) {
+  let base = String(rawText || "")
+    .replace(/@.*$/, "")
+    .replace(/[^A-Za-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (base.length < 3) base = `${base || "user"}_judge`.slice(0, 24);
+  if (base.length > 20) base = base.slice(0, 20);
+  const checkStmt = database.prepare("SELECT 1 FROM users WHERE username_key = ?");
+  let candidate = base;
+  let suffix = 1;
+  while (candidate.toLocaleLowerCase("en-US") === ADMIN_USERNAME ||
+         checkStmt.get(candidate.toLocaleLowerCase("en-US"))) {
+    candidate = `${base.slice(0, 18)}_${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
 function validForumText(text, maxLength) {
   return typeof text === "string" && text.trim().length > 0 &&
     text.trim().length <= maxLength && Buffer.byteLength(text, "utf8") <= maxLength * 4;
@@ -767,6 +1166,12 @@ function getForumThreads(category = "all", admin = false) {
   }));
 }
 
+function userProgressMap(userId) {
+  return Object.fromEntries(database.prepare(
+    "SELECT problem_id, state FROM user_progress WHERE user_id = ?"
+  ).all(userId).map((row) => [row.problem_id, row.state]));
+}
+
 async function handleUserApi(request, response, url) {
   const pathname = url.pathname;
   const isPost = request.method === "POST";
@@ -774,13 +1179,17 @@ async function handleUserApi(request, response, url) {
   const isWriteRoute = (isPost && [
     "/api/auth/register",
     "/api/auth/login",
+    "/api/auth/login/verify",
+    "/api/auth/firebase",
     "/api/auth/logout",
     "/api/progress",
     "/api/ratings",
     "/api/friends",
     "/api/account/avatar",
+    "/api/account/email",
     "/api/admin/problems",
     "/api/admin/problems/update",
+    "/api/admin/auth-settings",
     "/api/forum/threads",
   ].includes(pathname) || (isPost && /^\/api\/forum\/threads\/\d+\/replies$/.test(pathname))) ||
     (isDelete && (/^\/api\/forum\/(?:threads|replies)\/\d+$/.test(pathname) ||
@@ -811,6 +1220,30 @@ async function handleUserApi(request, response, url) {
       "Cache-Control": "public, max-age=3600",
     });
     response.end(request.method === "HEAD" ? undefined : Buffer.from(asset.data));
+    return true;
+  }
+
+  if (pathname === "/api/admin/auth-settings" && request.method === "GET") {
+    const user = currentUser(request, response);
+    if (!user || !isAdmin(user)) {
+      jsonError(response, user ? 403 : 401, "Only the administrator can view authentication settings.");
+      return true;
+    }
+    const settings = getAuthSettings();
+    send(response, 200, JSON.stringify({
+      firebaseApiKey: settings.firebaseApiKey,
+      firebaseAuthDomain: settings.firebaseAuthDomain,
+      firebaseProjectId: settings.firebaseProjectId,
+      firebaseAppId: settings.firebaseAppId,
+      smtpHost: settings.smtpHost,
+      smtpPort: settings.smtpPort,
+      smtpUser: settings.smtpUser,
+      smtpFrom: settings.smtpFrom,
+      hasSmtpPass: Boolean(settings.smtpPass),
+      requireEmailConfirmation: settings.requireEmailConfirmation,
+      firebaseEnabled: settings.firebaseEnabled,
+      smtpEnabled: settings.smtpEnabled,
+    }));
     return true;
   }
 
@@ -882,16 +1315,15 @@ async function handleUserApi(request, response, url) {
 
   if (pathname === "/api/auth/me" && request.method === "GET") {
     const user = currentUser(request, response);
+    const authConfig = publicAuthConfig();
     if (!user) {
-      send(response, 200, JSON.stringify({ user: null, progress: {} }));
+      send(response, 200, JSON.stringify({ user: null, progress: {}, authConfig }));
       return true;
     }
-    const savedProgress = Object.fromEntries(database.prepare(
-      "SELECT problem_id, state FROM user_progress WHERE user_id = ?"
-    ).all(user.id).map((row) => [row.problem_id, row.state]));
     send(response, 200, JSON.stringify({
       user: { id: user.id, username: user.username, isAdmin: isAdmin(user) },
-      progress: savedProgress,
+      progress: userProgressMap(user.id),
+      authConfig,
     }));
     return true;
   }
@@ -1002,11 +1434,11 @@ async function handleUserApi(request, response, url) {
   if (pathname === "/api/account" && request.method === "GET") {
     const user = currentUser(request, response);
     if (!user) {
-    jsonError(response, 401, "Log in to view your account information.");
-    return true;
+      jsonError(response, 401, "Log in to view your account information.");
+      return true;
     }
     const details = database.prepare(`
-    SELECT u.username, u.created_at, u.avatar_mime_type,
+    SELECT u.username, u.email, u.firebase_uid, u.created_at, u.avatar_mime_type,
       (SELECT COUNT(*) FROM user_progress p WHERE p.user_id = u.id AND p.state = 'solved') AS solved_count,
       (SELECT COUNT(*) FROM submissions s WHERE s.user_id = u.id) AS submission_count,
       (SELECT COUNT(*) FROM forum_threads t WHERE t.user_id = u.id) +
@@ -1014,7 +1446,13 @@ async function handleUserApi(request, response, url) {
     FROM users u WHERE u.id = ?
     `).get(user.id);
     send(response, 200, JSON.stringify({
-      ...details,
+      username: details.username,
+      email: details.email || null,
+      hasGoogle: Boolean(details.firebase_uid),
+      created_at: details.created_at,
+      solved_count: details.solved_count,
+      submission_count: details.submission_count,
+      forum_post_count: details.forum_post_count,
       avatarUrl: details.avatar_mime_type ? `/api/users/${user.id}/avatar` : null,
       isAdmin: isAdmin(user),
     }));
@@ -1059,8 +1497,9 @@ async function handleUserApi(request, response, url) {
 
   if (isPost && (pathname.startsWith("/api/auth/") || pathname === "/api/progress" ||
     pathname === "/api/ratings" || pathname === "/api/friends" ||
-    pathname === "/api/account/avatar" || pathname === "/api/admin/problems" ||
-    pathname === "/api/admin/problems/update" ||
+    pathname === "/api/account/avatar" || pathname === "/api/account/email" ||
+    pathname === "/api/admin/problems" || pathname === "/api/admin/problems/update" ||
+    pathname === "/api/admin/auth-settings" ||
     pathname === "/api/forum/threads" || /^\/api\/forum\/threads\/\d+\/replies$/.test(pathname))) {
     if (request.headers["content-type"]?.split(";")[0].trim() !== "application/json") {
       jsonError(response, 415, "Send request data as application/json.");
@@ -1085,16 +1524,23 @@ async function handleUserApi(request, response, url) {
       return true;
     }
 
-    if (pathname === "/api/auth/register" || pathname === "/api/auth/login") {
-      const usernameKey = typeof body.username === "string"
+    if (pathname === "/api/auth/register" || pathname === "/api/auth/login" ||
+        pathname === "/api/auth/login/verify" || pathname === "/api/auth/firebase") {
+      const rateKey = typeof body.username === "string"
         ? body.username.toLocaleLowerCase("en-US")
-        : "";
-      if (authRateLimit(request, response, usernameKey)) return true;
+        : typeof body.challengeToken === "string"
+          ? body.challengeToken.slice(0, 16)
+          : "firebase";
+      if (authRateLimit(request, response, rateKey)) return true;
     }
 
     if (pathname === "/api/auth/register") {
       if (typeof body.username !== "string" || !/^[A-Za-z0-9_]{3,24}$/.test(body.username)) {
         jsonError(response, 400, "Username must be 3 to 24 letters, numbers, or underscores.");
+        return true;
+      }
+      if (!validEmail(body.email)) {
+        jsonError(response, 400, "Enter a valid email address for login confirmation.");
         return true;
       }
       if (typeof body.password !== "string" || body.password.length < 10 || body.password.length > 128 ||
@@ -1104,22 +1550,32 @@ async function handleUserApi(request, response, url) {
       }
       const username = body.username;
       const usernameKey = username.toLocaleLowerCase("en-US");
+      const email = body.email.trim();
+      const emailKey = email.toLocaleLowerCase("en-US");
       if (usernameKey === ADMIN_USERNAME) {
         jsonError(response, 409, "That username is reserved for the site administrator.");
+        return true;
+      }
+      if (database.prepare("SELECT 1 FROM users WHERE email_key = ?").get(emailKey)) {
+        jsonError(response, 409, "An account with that email address already exists.");
         return true;
       }
       const salt = crypto.randomBytes(16);
       const passwordHash = await hashPassword(body.password, salt);
       try {
         const inserted = database.prepare(
-          "INSERT INTO users (username, username_key, password_salt, password_hash, created_at) VALUES (?, ?, ?, ?, ?)"
-        ).run(username, usernameKey, salt.toString("hex"), passwordHash.toString("hex"), new Date().toISOString());
+          "INSERT INTO users (username, username_key, email, email_key, password_salt, password_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        ).run(username, usernameKey, email, emailKey, salt.toString("hex"), passwordHash.toString("hex"), new Date().toISOString());
         const user = { id: Number(inserted.lastInsertRowid), username };
         createSession(response, user);
-        send(response, 201, JSON.stringify({ user: { id: user.id, username, isAdmin: isAdmin(user) }, progress: {} }));
+        send(response, 201, JSON.stringify({
+          user: { id: user.id, username, isAdmin: isAdmin(user) },
+          progress: {},
+          authConfig: publicAuthConfig(),
+        }));
       } catch (error) {
         if (error.errcode === 2067 || error.code === "SQLITE_CONSTRAINT_UNIQUE") {
-          jsonError(response, 409, "That username is already taken.");
+          jsonError(response, 409, "That username or email is already taken.");
         } else {
           throw error;
         }
@@ -1129,14 +1585,14 @@ async function handleUserApi(request, response, url) {
 
     if (pathname === "/api/auth/login") {
       if (typeof body.username !== "string" || typeof body.password !== "string" ||
-          body.username.length > 24 || body.password.length > 128) {
+          body.username.length > 254 || body.password.length > 128) {
         jsonError(response, 401, "Incorrect username or password.");
         return true;
       }
-      const usernameKey = body.username.toLocaleLowerCase("en-US");
+      const identifierKey = body.username.trim().toLocaleLowerCase("en-US");
       const storedUser = database.prepare(
-        "SELECT id, username, password_salt, password_hash FROM users WHERE username_key = ?"
-      ).get(usernameKey);
+        "SELECT id, username, email, password_salt, password_hash FROM users WHERE username_key = ? OR email_key = ?"
+      ).get(identifierKey, identifierKey);
       const salt = storedUser ? Buffer.from(storedUser.password_salt, "hex") : Buffer.alloc(16);
       const expected = storedUser ? Buffer.from(storedUser.password_hash, "hex") : Buffer.alloc(PASSWORD_KEY_LENGTH);
       const actual = await hashPassword(body.password, salt);
@@ -1144,12 +1600,211 @@ async function handleUserApi(request, response, url) {
         jsonError(response, 401, "Incorrect username or password.");
         return true;
       }
+
+      const settings = getAuthSettings();
+      if (storedUser.email && settings.requireEmailConfirmation) {
+        if (settings.smtpEnabled) {
+          const code = String(crypto.randomInt(100000, 1000000));
+          const challengeToken = crypto.randomBytes(32).toString("hex");
+          const tokenHash = crypto.createHash("sha256").update(challengeToken).digest("hex");
+          const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+          const expiresAt = Date.now() + LOGIN_CHALLENGE_LIFETIME;
+          try {
+            await sendLoginCodeEmail(settings, storedUser.email, storedUser.username, code);
+          } catch (error) {
+            console.error("Failed to send login confirmation email:", error);
+            jsonError(response, 502, "Could not send the login confirmation email. Check the server SMTP settings.");
+            return true;
+          }
+          database.prepare("DELETE FROM login_challenges WHERE user_id = ?").run(storedUser.id);
+          database.prepare(`
+            INSERT INTO login_challenges (token_hash, user_id, code_hash, email, method, attempts, expires_at, created_at)
+            VALUES (?, ?, ?, ?, 'code', 0, ?, ?)
+          `).run(tokenHash, storedUser.id, codeHash, storedUser.email, expiresAt, new Date().toISOString());
+          send(response, 200, JSON.stringify({
+            confirmationRequired: true,
+            method: "code",
+            challengeToken,
+            maskedEmail: maskEmail(storedUser.email),
+          }));
+          return true;
+        }
+        if (settings.firebaseEnabled) {
+          const challengeToken = crypto.randomBytes(32).toString("hex");
+          const tokenHash = crypto.createHash("sha256").update(challengeToken).digest("hex");
+          const expiresAt = Date.now() + LOGIN_CHALLENGE_LIFETIME;
+          database.prepare("DELETE FROM login_challenges WHERE user_id = ?").run(storedUser.id);
+          database.prepare(`
+            INSERT INTO login_challenges (token_hash, user_id, code_hash, email, method, attempts, expires_at, created_at)
+            VALUES (?, ?, '', ?, 'firebase_link', 0, ?, ?)
+          `).run(tokenHash, storedUser.id, storedUser.email, expiresAt, new Date().toISOString());
+          send(response, 200, JSON.stringify({
+            confirmationRequired: true,
+            method: "firebase",
+            challengeToken,
+            email: storedUser.email,
+            maskedEmail: maskEmail(storedUser.email),
+          }));
+          return true;
+        }
+      }
+
       const user = { id: storedUser.id, username: storedUser.username };
       createSession(response, user);
-      const savedProgress = Object.fromEntries(database.prepare(
-        "SELECT problem_id, state FROM user_progress WHERE user_id = ?"
-      ).all(user.id).map((row) => [row.problem_id, row.state]));
-      send(response, 200, JSON.stringify({ user: { id: user.id, username: user.username, isAdmin: isAdmin(user) }, progress: savedProgress }));
+      send(response, 200, JSON.stringify({
+        user: { id: user.id, username: user.username, isAdmin: isAdmin(user) },
+        progress: userProgressMap(user.id),
+        authConfig: publicAuthConfig(),
+      }));
+      return true;
+    }
+
+    if (pathname === "/api/auth/login/verify") {
+      if (typeof body.challengeToken !== "string" || !TOKEN_PATTERN.test(body.challengeToken)) {
+        jsonError(response, 400, "Invalid or expired login confirmation session. Please log in again.");
+        return true;
+      }
+      const tokenHash = crypto.createHash("sha256").update(body.challengeToken).digest("hex");
+      const challenge = database.prepare(
+        "SELECT token_hash, user_id, code_hash, email, method, attempts, expires_at FROM login_challenges WHERE token_hash = ?"
+      ).get(tokenHash);
+      if (!challenge || challenge.expires_at <= Date.now()) {
+        if (challenge) database.prepare("DELETE FROM login_challenges WHERE token_hash = ?").run(tokenHash);
+        jsonError(response, 401, "That login confirmation code has expired. Please log in again.");
+        return true;
+      }
+      if (challenge.attempts >= 5) {
+        database.prepare("DELETE FROM login_challenges WHERE token_hash = ?").run(tokenHash);
+        jsonError(response, 429, "Too many incorrect confirmation attempts. Please log in again.");
+        return true;
+      }
+
+      if (challenge.method === "code") {
+        const code = typeof body.code === "string" ? body.code.trim() : "";
+        if (!/^\d{6}$/.test(code)) {
+          jsonError(response, 400, "Enter the 6-digit confirmation code from your email.");
+          return true;
+        }
+        const actualHash = Buffer.from(crypto.createHash("sha256").update(code).digest("hex"), "hex");
+        const expectedHash = Buffer.from(challenge.code_hash, "hex");
+        if (actualHash.length !== expectedHash.length || !crypto.timingSafeEqual(actualHash, expectedHash)) {
+          database.prepare("UPDATE login_challenges SET attempts = attempts + 1 WHERE token_hash = ?").run(tokenHash);
+          jsonError(response, 401, "Incorrect confirmation code.");
+          return true;
+        }
+      } else if (challenge.method === "firebase_link") {
+        const settings = getAuthSettings();
+        let verified;
+        try {
+          verified = await verifyFirebaseIdToken(body.firebaseIdToken, settings);
+        } catch (error) {
+          database.prepare("UPDATE login_challenges SET attempts = attempts + 1 WHERE token_hash = ?").run(tokenHash);
+          jsonError(response, error.statusCode || 401, error.message);
+          return true;
+        }
+        if (!verified.emailVerified || verified.email.toLocaleLowerCase("en-US") !== challenge.email.toLocaleLowerCase("en-US")) {
+          database.prepare("UPDATE login_challenges SET attempts = attempts + 1 WHERE token_hash = ?").run(tokenHash);
+          jsonError(response, 401, "The confirmed Firebase email does not match this account.");
+          return true;
+        }
+      }
+
+      database.prepare("DELETE FROM login_challenges WHERE token_hash = ?").run(tokenHash);
+      const storedUser = database.prepare("SELECT id, username FROM users WHERE id = ?").get(challenge.user_id);
+      if (!storedUser) {
+        jsonError(response, 404, "Account no longer exists.");
+        return true;
+      }
+      createSession(response, storedUser);
+      send(response, 200, JSON.stringify({
+        user: { id: storedUser.id, username: storedUser.username, isAdmin: isAdmin(storedUser) },
+        progress: userProgressMap(storedUser.id),
+        authConfig: publicAuthConfig(),
+      }));
+      return true;
+    }
+
+    if (pathname === "/api/auth/firebase") {
+      const settings = getAuthSettings();
+      let verified;
+      try {
+        verified = await verifyFirebaseIdToken(body.idToken, settings);
+      } catch (error) {
+        jsonError(response, error.statusCode || 401, error.message);
+        return true;
+      }
+      const emailKey = verified.email ? verified.email.toLocaleLowerCase("en-US") : null;
+      let existingUser = database.prepare("SELECT id, username, email, firebase_uid FROM users WHERE firebase_uid = ?").get(verified.uid);
+      if (!existingUser && emailKey && verified.emailVerified) {
+        existingUser = database.prepare("SELECT id, username, email, firebase_uid FROM users WHERE email_key = ?").get(emailKey);
+        if (existingUser && !existingUser.firebase_uid) {
+          database.prepare("UPDATE users SET firebase_uid = ? WHERE id = ?").run(verified.uid, existingUser.id);
+        }
+      }
+      if (existingUser) {
+        if (!existingUser.email && verified.email && emailKey) {
+          try {
+            database.prepare("UPDATE users SET email = ?, email_key = ? WHERE id = ?")
+              .run(verified.email, emailKey, existingUser.id);
+          } catch {}
+        }
+        createSession(response, existingUser);
+        send(response, 200, JSON.stringify({
+          user: { id: existingUser.id, username: existingUser.username, isAdmin: isAdmin(existingUser) },
+          progress: userProgressMap(existingUser.id),
+          authConfig: publicAuthConfig(),
+        }));
+        return true;
+      }
+
+      const requestedUsername = typeof body.username === "string" ? body.username.trim() : "";
+      if (!requestedUsername) {
+        send(response, 200, JSON.stringify({
+          needsUsername: true,
+          suggestedUsername: suggestAvailableUsername(verified.name || verified.email),
+          email: verified.email || null,
+        }));
+        return true;
+      }
+      if (!/^[A-Za-z0-9_]{3,24}$/.test(requestedUsername)) {
+        jsonError(response, 400, "Username must be 3 to 24 letters, numbers, or underscores.");
+        return true;
+      }
+      const usernameKey = requestedUsername.toLocaleLowerCase("en-US");
+      if (usernameKey === ADMIN_USERNAME) {
+        jsonError(response, 409, "That username is reserved for the site administrator.");
+        return true;
+      }
+      const salt = crypto.randomBytes(16);
+      const randomPasswordHash = await hashPassword(crypto.randomBytes(32).toString("hex"), salt);
+      try {
+        const inserted = database.prepare(`
+          INSERT INTO users (username, username_key, email, email_key, firebase_uid, password_salt, password_hash, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          requestedUsername,
+          usernameKey,
+          verified.email || null,
+          emailKey,
+          verified.uid,
+          salt.toString("hex"),
+          randomPasswordHash.toString("hex"),
+          new Date().toISOString()
+        );
+        const user = { id: Number(inserted.lastInsertRowid), username: requestedUsername };
+        createSession(response, user);
+        send(response, 201, JSON.stringify({
+          user: { id: user.id, username: user.username, isAdmin: isAdmin(user) },
+          progress: {},
+          authConfig: publicAuthConfig(),
+        }));
+      } catch (error) {
+        if (error.errcode === 2067 || error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+          jsonError(response, 409, "That username or email is already linked to another account.");
+        } else {
+          throw error;
+        }
+      }
       return true;
     }
 
@@ -1162,6 +1817,91 @@ async function handleUserApi(request, response, url) {
     const user = currentUser(request, response);
     if (!user) {
       jsonError(response, 401, "Log in to perform this action.");
+      return true;
+    }
+
+    if (pathname === "/api/account/email") {
+      if (body.idToken) {
+        const settings = getAuthSettings();
+        let verified;
+        try {
+          verified = await verifyFirebaseIdToken(body.idToken, settings);
+        } catch (error) {
+          jsonError(response, error.statusCode || 401, error.message);
+          return true;
+        }
+        const emailKey = verified.email ? verified.email.toLocaleLowerCase("en-US") : null;
+        try {
+          database.prepare("UPDATE users SET firebase_uid = ?, email = COALESCE(?, email), email_key = COALESCE(?, email_key) WHERE id = ?")
+            .run(verified.uid, verified.email || null, emailKey, user.id);
+        } catch (error) {
+          if (error.errcode === 2067 || error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+            jsonError(response, 409, "That Google account or email is already linked to another user.");
+            return true;
+          }
+          throw error;
+        }
+        send(response, 200, JSON.stringify({ ok: true, email: verified.email || null, hasGoogle: true }));
+        return true;
+      }
+      if (!validEmail(body.email)) {
+        jsonError(response, 400, "Enter a valid email address.");
+        return true;
+      }
+      const email = body.email.trim();
+      const emailKey = email.toLocaleLowerCase("en-US");
+      try {
+        database.prepare("UPDATE users SET email = ?, email_key = ? WHERE id = ?").run(email, emailKey, user.id);
+      } catch (error) {
+        if (error.errcode === 2067 || error.code === "SQLITE_CONSTRAINT_UNIQUE") {
+          jsonError(response, 409, "That email address is already used by another account.");
+          return true;
+        }
+        throw error;
+      }
+      send(response, 200, JSON.stringify({ ok: true, email }));
+      return true;
+    }
+
+    if (pathname === "/api/admin/auth-settings") {
+      if (!isAdmin(user)) {
+        jsonError(response, 403, "Only the administrator can update authentication settings.");
+        return true;
+      }
+      const updates = {
+        firebaseApiKey: typeof body.firebaseApiKey === "string" ? body.firebaseApiKey.trim() : "",
+        firebaseAuthDomain: typeof body.firebaseAuthDomain === "string" ? body.firebaseAuthDomain.trim() : "",
+        firebaseProjectId: typeof body.firebaseProjectId === "string" ? body.firebaseProjectId.trim() : "",
+        firebaseAppId: typeof body.firebaseAppId === "string" ? body.firebaseAppId.trim() : "",
+        smtpHost: typeof body.smtpHost === "string" ? body.smtpHost.trim() : "",
+        smtpPort: String(Number(body.smtpPort) || 465),
+        smtpUser: typeof body.smtpUser === "string" ? body.smtpUser.trim() : "",
+        smtpFrom: typeof body.smtpFrom === "string" ? body.smtpFrom.trim() : "",
+        requireEmailConfirmation: body.requireEmailConfirmation === false ? "false" : "true",
+      };
+      if (typeof body.smtpPass === "string" && body.smtpPass.length > 0) {
+        updates.smtpPass = body.smtpPass;
+      } else if (body.clearSmtpPass === true) {
+        updates.smtpPass = "";
+      }
+      saveAuthSettings(updates);
+      const saved = getAuthSettings();
+      if (typeof body.testEmail === "string" && body.testEmail.trim()) {
+        if (!saved.smtpEnabled) {
+          jsonError(response, 400, "Settings saved, but SMTP host, username, and password are required to send a test email.");
+          return true;
+        }
+        try {
+          await sendLoginCodeEmail(saved, body.testEmail.trim(), user.username, "123456");
+        } catch (error) {
+          jsonError(response, 502, `Settings saved, but test email failed: ${error.message}`);
+          return true;
+        }
+      }
+      send(response, 200, JSON.stringify({
+        ok: true,
+        authConfig: publicAuthConfig(),
+      }));
       return true;
     }
 
