@@ -73,7 +73,7 @@ const MIME_TYPES = {
 
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
+  "X-Frame-Options": "SAMEORIGIN",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Content-Security-Policy": [
@@ -83,7 +83,7 @@ const SECURITY_HEADERS = {
     "img-src 'self' data: https: https://*.googleusercontent.com",
     "connect-src 'self' https://*.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com",
     "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com",
-    "frame-ancestors 'none'",
+    "frame-ancestors 'self'",
     "base-uri 'self'",
     "form-action 'self'",
   ].join("; "),
@@ -3441,6 +3441,7 @@ function serveFile(request, response, filePath) {
   response.writeHead(200, {
     ...SECURITY_HEADERS,
     "Content-Type": contentType,
+    ...(extension === ".pdf" ? { "Content-Disposition": 'inline; filename="statement.pdf"' } : {}),
     "Cache-Control": "no-store",
   });
   if (request.method === "HEAD") {
