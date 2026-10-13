@@ -181,7 +181,87 @@
         <div class="page-heading">
           <div><div class="breadcrumbs">HOME <span>›</span> ADMIN</div><h1>Administrator tools</h1></div>
         </div>
-        <div class="notice-bar"><strong>PROBLEMSET MANAGER</strong><span>Publish a problem into a collection and manage inappropriate forum posts.</span></div>
+        <div class="notice-bar"><strong>SYSTEM DASHBOARD &amp; MANAGER</strong><span>Monitor live platform traffic, manage problems, and configure authentication.</span></div>
+        <div id="admin-traffic-section" class="submit-form admin-form">
+          <div class="traffic-header">
+            <div>
+              <h2>Live Traffic &amp; System Analytics</h2>
+              <p class="admin-help">Monitor real-time visitors, request volumes, error rates, and response latency across the platform.</p>
+            </div>
+            <div class="traffic-header-actions">
+              <span class="live-pill" id="traffic-live-indicator"><span class="live-dot"></span> LIVE</span>
+              <button type="button" class="plain-button traffic-refresh-btn" id="traffic-refresh-button">REFRESH</button>
+            </div>
+          </div>
+
+          <div class="traffic-cards" id="traffic-summary-cards">
+            <div class="traffic-card">
+              <span class="traffic-card-label">24H REQUESTS</span>
+              <strong class="traffic-card-value" id="traffic-stat-requests">—</strong>
+              <span class="traffic-card-sub" id="traffic-stat-hour">— last hour</span>
+            </div>
+            <div class="traffic-card">
+              <span class="traffic-card-label">UNIQUE VISITORS (24H)</span>
+              <strong class="traffic-card-value" id="traffic-stat-visitors">—</strong>
+              <span class="traffic-card-sub">Distinct client IPs</span>
+            </div>
+            <div class="traffic-card">
+              <span class="traffic-card-label">ACTIVE SESSIONS</span>
+              <strong class="traffic-card-value" id="traffic-stat-active">—</strong>
+              <span class="traffic-card-sub">Active in last 15m</span>
+            </div>
+            <div class="traffic-card">
+              <span class="traffic-card-label">AVG RESPONSE TIME</span>
+              <strong class="traffic-card-value" id="traffic-stat-latency">—</strong>
+              <span class="traffic-card-sub" id="traffic-stat-errors">— errors (24h)</span>
+            </div>
+          </div>
+
+          <div class="traffic-chart-container">
+            <div class="traffic-chart-header">
+              <span class="field-label">24-HOUR REQUEST VOLUME</span>
+              <span class="traffic-chart-legend">
+                <span class="legend-box legend-success"></span> Success (2xx/3xx)
+                <span class="legend-box legend-error"></span> Errors (4xx/5xx)
+              </span>
+            </div>
+            <div id="traffic-chart-wrapper" class="traffic-chart-wrapper">
+              <div class="table-placeholder">Loading traffic timeline…</div>
+            </div>
+          </div>
+
+          <div class="traffic-grid-splits">
+            <div class="traffic-split-col">
+              <h3>Top Visited Endpoints (24h)</h3>
+              <div class="table-scroll">
+                <table class="data-table traffic-table">
+                  <thead><tr><th>METHOD</th><th>PATH</th><th>HITS</th></tr></thead>
+                  <tbody id="traffic-top-paths"><tr><td colspan="3" class="table-placeholder">Loading…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="traffic-split-col">
+              <h3>Top Visitor IPs (24h)</h3>
+              <div class="table-scroll">
+                <table class="data-table traffic-table">
+                  <thead><tr><th>IP ADDRESS</th><th>HITS</th><th>LAST SEEN</th></tr></thead>
+                  <tbody id="traffic-top-ips"><tr><td colspan="3" class="table-placeholder">Loading…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="traffic-recent-section">
+            <h3>Recent Requests (Live Feed)</h3>
+            <div class="table-scroll">
+              <table class="data-table traffic-table traffic-recent-table">
+                <thead><tr><th>TIME</th><th>STATUS</th><th>METHOD</th><th>PATH</th><th>LATENCY</th><th>CLIENT IP</th><th>USER</th></tr></thead>
+                <tbody id="traffic-recent-log"><tr><td colspan="7" class="table-placeholder">Loading recent requests…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <form id="admin-problem-form" class="submit-form admin-form">
           <h2>Add a problem</h2>
           <div class="admin-problem-fields">

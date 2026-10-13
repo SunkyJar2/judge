@@ -67,6 +67,19 @@ const ui = {
   adminAuthError: document.querySelector("#admin-auth-error"),
   adminAuthSubmit: document.querySelector("#admin-auth-submit"),
   adminFirebaseSnippet: document.querySelector("#admin-firebase-snippet"),
+  adminTrafficSection: document.querySelector("#admin-traffic-section"),
+  trafficRefreshButton: document.querySelector("#traffic-refresh-button"),
+  trafficLiveIndicator: document.querySelector("#traffic-live-indicator"),
+  trafficStatRequests: document.querySelector("#traffic-stat-requests"),
+  trafficStatHour: document.querySelector("#traffic-stat-hour"),
+  trafficStatVisitors: document.querySelector("#traffic-stat-visitors"),
+  trafficStatActive: document.querySelector("#traffic-stat-active"),
+  trafficStatLatency: document.querySelector("#traffic-stat-latency"),
+  trafficStatErrors: document.querySelector("#traffic-stat-errors"),
+  trafficChartWrapper: document.querySelector("#traffic-chart-wrapper"),
+  trafficTopPaths: document.querySelector("#traffic-top-paths"),
+  trafficTopIps: document.querySelector("#traffic-top-ips"),
+  trafficRecentLog: document.querySelector("#traffic-recent-log"),
 };
 
 const EMAIL_CHALLENGE_STORAGE_KEY = "untitled-judge-email-challenge";
@@ -777,6 +790,7 @@ function switchPage(pageName, navPageName = pageName) {
   document.querySelectorAll("[data-page-link]").forEach((link) =>
     link.classList.toggle("active", link.dataset.pageLink === navPageName)
   );
+  if (pageName !== "admin") stopAdminTrafficPolling();
   if (pageName === "status") renderStatusPage();
   if (pageName === "progress") renderProgressPage();
   if (pageName === "account") renderAccountPage();
@@ -1101,14 +1115,208 @@ async function renderUserProfile(userId) {
   }
 }
 
+let adminTrafficTimer = null;
+
+function stopAdminTrafficPolling() {
+  if (adminTrafficTimer) {
+    clearInterval(adminTrafficTimer);
+    adminTrafficTimer = null;
+  }
+}
+
+function startAdminTrafficPolling() {
+  stopAdminTrafficPolling();
+  adminTrafficTimer = setInterval(() => {
+    if (location.hash === "#admin" && currentUser?.isAdmin) {
+      void loadAdminTrafficDashboard(true);
+    } else {
+      stopAdminTrafficPolling();
+    }
+  }, 30000);
+}
+
+function formatTrafficTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function renderTrafficChart(timeline) {
+  if (!ui.trafficChartWrapper) return;
+  if (!timeline || timeline.length === 0) {
+    ui.trafficChartWrapper.innerHTML = '<div class="table-placeholder">No traffic data recorded in the last 24 hours.</div>';
+    return;
+  }
+
+  const maxVal = Math.max(1, ...timeline.map((item) => Number(item.count) || 0));
+  const scaleMax = Math.max(5, Math.ceil(maxVal * 1.15));
+  const chartHeight = 70;
+  const baseline = 82;
+  const slotWidth = 720 / 24;
+  const barWidth = 16;
+  const barOffset = (slotWidth - barWidth) / 2;
+
+  let barsSvg = "";
+  let labelsSvg = "";
+
+  timeline.forEach((item, index) => {
+    const count = Number(item.count) || 0;
+    const errors = Math.min(count, Number(item.errors) || 0);
+    const success = Math.max(0, count - errors);
+
+    const totalBarH = count > 0 ? Math.max(2, Math.round((count / scaleMax) * chartHeight)) : 0;
+    const errBarH = errors > 0 ? Math.max(errors === count ? totalBarH : 1, Math.round((errors / scaleMax) * chartHeight)) : 0;
+    const succBarH = Math.max(0, totalBarH - errBarH);
+
+    const x = Math.round(index * slotWidth + barOffset);
+
+    if (count > 0) {
+      if (succBarH > 0) {
+        const succY = baseline - succBarH;
+        barsSvg += `<rect x="${x}" y="${succY}" width="${barWidth}" height="${succBarH}" rx="1" fill="#3b9ab8" />`;
+      }
+      if (errBarH > 0) {
+        const errY = baseline - totalBarH;
+        barsSvg += `<rect x="${x}" y="${errY}" width="${barWidth}" height="${errBarH}" rx="1" fill="#cf4f44" />`;
+      }
+    } else {
+      barsSvg += `<rect x="${x}" y="${baseline - 1}" width="${barWidth}" height="1" fill="currentColor" opacity="0.15" />`;
+    }
+
+    barsSvg += `<rect x="${Math.round(index * slotWidth)}" y="0" width="${slotWidth}" height="100" fill="transparent"><title>${escapeHtml(item.label)} (${escapeHtml(item.time)}): ${count} requests (${errors} errors)</title></rect>`;
+
+    if (index % 4 === 0 || index === 23) {
+      labelsSvg += `<text x="${Math.round(index * slotWidth + slotWidth / 2)}" y="97" font-size="8" fill="currentColor" opacity="0.6" text-anchor="middle" font-family="sans-serif">${escapeHtml(item.label)}</text>`;
+    }
+  });
+
+  const midVal = Math.round(scaleMax / 2);
+  const midY = baseline - Math.round(chartHeight / 2);
+
+  const svg = `
+    <svg class="traffic-svg-chart" viewBox="0 0 720 102" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="0" y1="${baseline}" x2="720" y2="${baseline}" stroke="currentColor" stroke-opacity="0.2" stroke-width="1" />
+      <line x1="0" y1="${midY}" x2="720" y2="${midY}" stroke="currentColor" stroke-opacity="0.08" stroke-dasharray="3,3" stroke-width="1" />
+      <line x1="0" y1="${baseline - chartHeight}" x2="720" y2="${baseline - chartHeight}" stroke="currentColor" stroke-opacity="0.08" stroke-dasharray="3,3" stroke-width="1" />
+      <text x="716" y="${baseline - chartHeight + 8}" font-size="8" fill="currentColor" opacity="0.6" text-anchor="end" font-family="sans-serif">${scaleMax}</text>
+      <text x="716" y="${midY - 2}" font-size="8" fill="currentColor" opacity="0.6" text-anchor="end" font-family="sans-serif">${midVal}</text>
+      ${barsSvg}
+      ${labelsSvg}
+    </svg>
+  `;
+
+  ui.trafficChartWrapper.innerHTML = svg;
+}
+
+function renderAdminTrafficDashboard(data) {
+  if (!data) return;
+  const { summary, timeline, topPaths, topIps, recentRequests } = data;
+
+  if (summary) {
+    if (ui.trafficStatRequests) ui.trafficStatRequests.textContent = summary.total24h.toLocaleString();
+    if (ui.trafficStatHour) ui.trafficStatHour.textContent = `${summary.total1h.toLocaleString()} last hour`;
+    if (ui.trafficStatVisitors) ui.trafficStatVisitors.textContent = summary.uniqueIps24h.toLocaleString();
+    if (ui.trafficStatActive) ui.trafficStatActive.textContent = summary.activeUsers15m.toLocaleString();
+    if (ui.trafficStatLatency) ui.trafficStatLatency.textContent = `${summary.avgElapsedMs.toFixed(1)} ms`;
+    if (ui.trafficStatErrors) {
+      const errRate = summary.total24h > 0 ? ((summary.errors24h / summary.total24h) * 100).toFixed(1) : "0.0";
+      ui.trafficStatErrors.textContent = `${summary.errors24h.toLocaleString()} errors (${errRate}%)`;
+    }
+  }
+
+  renderTrafficChart(timeline || []);
+
+  if (ui.trafficTopPaths) {
+    if (!topPaths || topPaths.length === 0) {
+      ui.trafficTopPaths.innerHTML = '<tr><td colspan="3" class="table-placeholder">No traffic recorded yet</td></tr>';
+    } else {
+      ui.trafficTopPaths.innerHTML = topPaths.map((row) => `
+        <tr>
+          <td><span class="traffic-method-tag">${escapeHtml(row.method)}</span></td>
+          <td style="word-break: break-all; font-family: var(--mono);">${escapeHtml(row.path)}</td>
+          <td><strong>${Number(row.count).toLocaleString()}</strong></td>
+        </tr>
+      `).join("");
+    }
+  }
+
+  if (ui.trafficTopIps) {
+    if (!topIps || topIps.length === 0) {
+      ui.trafficTopIps.innerHTML = '<tr><td colspan="3" class="table-placeholder">No visitors recorded yet</td></tr>';
+    } else {
+      ui.trafficTopIps.innerHTML = topIps.map((row) => `
+        <tr>
+          <td style="font-family: var(--mono);">${escapeHtml(row.ip)}</td>
+          <td><strong>${Number(row.count).toLocaleString()}</strong></td>
+          <td>${escapeHtml(formatDate(row.last_seen))}</td>
+        </tr>
+      `).join("");
+    }
+  }
+
+  if (ui.trafficRecentLog) {
+    if (!recentRequests || recentRequests.length === 0) {
+      ui.trafficRecentLog.innerHTML = '<tr><td colspan="7" class="table-placeholder">No recent requests recorded</td></tr>';
+    } else {
+      ui.trafficRecentLog.innerHTML = recentRequests.map((row) => {
+        let badgeClass = "badge-status-2xx";
+        if (row.status >= 500) badgeClass = "badge-status-5xx";
+        else if (row.status >= 400) badgeClass = "badge-status-4xx";
+        else if (row.status >= 300) badgeClass = "badge-status-3xx";
+
+        const timeStr = row.created_at ? formatTrafficTime(row.created_at) : "-";
+        const userDisplay = row.username
+          ? `<span style="font-weight: 600;">${escapeHtml(row.username)}</span>`
+          : '<span style="color: #8ca0a8;">Guest</span>';
+
+        return `
+          <tr>
+            <td style="white-space: nowrap;">${escapeHtml(timeStr)}</td>
+            <td><span class="badge-status ${badgeClass}">${Number(row.status)}</span></td>
+            <td><span class="traffic-method-tag">${escapeHtml(row.method)}</span></td>
+            <td style="word-break: break-all; font-family: var(--mono);">${escapeHtml(row.path)}</td>
+            <td style="white-space: nowrap;">${Number(row.elapsed_ms)} ms</td>
+            <td style="white-space: nowrap; font-family: var(--mono);">${escapeHtml(row.ip)}</td>
+            <td>${userDisplay}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+}
+
+async function loadAdminTrafficDashboard(silent = false) {
+  if (!currentUser?.isAdmin) return;
+  if (!silent && ui.trafficRefreshButton) {
+    ui.trafficRefreshButton.disabled = true;
+    ui.trafficRefreshButton.textContent = "REFRESHING…";
+  }
+  try {
+    const data = await apiRequest("/api/admin/traffic");
+    renderAdminTrafficDashboard(data);
+  } catch (error) {
+    if (!silent) console.error("Failed to load traffic dashboard:", error);
+  } finally {
+    if (ui.trafficRefreshButton) {
+      ui.trafficRefreshButton.disabled = false;
+      ui.trafficRefreshButton.textContent = "REFRESH";
+    }
+  }
+}
+
 function renderAdminPage() {
   const canAdmin = Boolean(currentUser?.isAdmin);
+  if (ui.adminTrafficSection) ui.adminTrafficSection.classList.toggle("hidden", !canAdmin);
   ui.adminProblemForm.classList.toggle("hidden", !canAdmin);
   ui.adminEditForm.classList.toggle("hidden", !canAdmin);
   ui.adminAuthForm.classList.toggle("hidden", !canAdmin);
   if (canAdmin) {
+    void loadAdminTrafficDashboard();
+    startAdminTrafficPolling();
     void loadAdminProblemOptions();
     void loadAdminAuthSettings();
+  } else {
+    stopAdminTrafficPolling();
   }
 }
 
@@ -1960,6 +2168,11 @@ ui.adminFirebaseSnippet.addEventListener("input", parseFirebaseSnippetInput);
 ui.adminEditSelect.addEventListener("change", () => {
   void loadAdminProblemForEditing(ui.adminEditSelect.value);
 });
+if (ui.trafficRefreshButton) {
+  ui.trafficRefreshButton.addEventListener("click", () => {
+    void loadAdminTrafficDashboard(false);
+  });
+}
 ui.forumList.addEventListener("click", (event) => {
   const button = event.target.closest('[data-action="delete-forum-post"]');
   if (button) void deleteForumPost(button.dataset.kind, button.dataset.id);

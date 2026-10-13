@@ -257,6 +257,19 @@ database.exec(`
     PRIMARY KEY (user_id, problem_id)
   );
   CREATE INDEX IF NOT EXISTS user_problem_points_user_id ON user_problem_points(user_id);
+  CREATE TABLE IF NOT EXISTS http_traffic_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    method TEXT NOT NULL,
+    path TEXT NOT NULL,
+    status INTEGER NOT NULL,
+    elapsed_ms INTEGER NOT NULL,
+    ip TEXT NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS http_traffic_created_at ON http_traffic_log(created_at DESC);
+  CREATE INDEX IF NOT EXISTS http_traffic_path ON http_traffic_log(path);
+  CREATE INDEX IF NOT EXISTS http_traffic_ip ON http_traffic_log(ip);
 `);
 database.prepare("DELETE FROM auth_sessions WHERE expires_at <= ?").run(Date.now());
 database.prepare("DELETE FROM login_challenges WHERE expires_at <= ?").run(Date.now());
@@ -270,6 +283,47 @@ const sessionCleanupTimer = setInterval(() => {
   database.prepare("DELETE FROM login_challenges WHERE expires_at <= ?").run(now);
 }, 15 * 60 * 1000);
 sessionCleanupTimer.unref();
+
+const trafficBuffer = [];
+let lastTrafficPrune = Date.now();
+
+function logTrafficRecord(record) {
+  trafficBuffer.push(record);
+  if (trafficBuffer.length >= 40) {
+    flushTrafficBuffer();
+  }
+}
+
+function flushTrafficBuffer() {
+  if (!trafficBuffer.length) return;
+  const batch = trafficBuffer.splice(0, trafficBuffer.length);
+  try {
+    const insert = database.prepare(`
+      INSERT INTO http_traffic_log (method, path, status, elapsed_ms, ip, user_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    database.exec("BEGIN");
+    for (const item of batch) {
+      insert.run(item.method, item.path, item.status, item.elapsedMs, item.ip, item.userId, item.createdAt);
+    }
+    database.exec("COMMIT");
+  } catch (err) {
+    try { database.exec("ROLLBACK"); } catch {}
+    console.error("Failed to flush traffic log:", err);
+  }
+
+  const now = Date.now();
+  if (now - lastTrafficPrune > 3600_000) {
+    lastTrafficPrune = now;
+    const cutoff = new Date(now - 7 * 24 * 3600_000).toISOString();
+    try {
+      database.prepare("DELETE FROM http_traffic_log WHERE created_at < ?").run(cutoff);
+    } catch {}
+  }
+}
+
+const trafficFlushTimer = setInterval(flushTrafficBuffer, 2500);
+trafficFlushTimer.unref();
 
 function unquoteYaml(value) {
   const text = value.trim();
@@ -596,7 +650,11 @@ function getSessionUser(request, response) {
 }
 
 function currentUser(request, response) {
-  return getSessionUser(request, response);
+  if (request._currentUser !== undefined) return request._currentUser;
+  const user = getSessionUser(request, response);
+  request._currentUser = user;
+  if (user) request._authenticatedUserId = user.id;
+  return user;
 }
 
 function createSession(response, user) {
@@ -750,6 +808,103 @@ function publicAuthConfig() {
       enabled: emailMode !== "off",
       mode: emailMode,
     },
+  };
+}
+
+function getAdminTrafficData() {
+  flushTrafficBuffer();
+  const now = Date.now();
+  const since24h = new Date(now - 24 * 3600_000).toISOString();
+  const since1h = new Date(now - 3600_000).toISOString();
+  const since15m = new Date(now - 15 * 60_000).toISOString();
+
+  const summary = database.prepare(`
+    SELECT
+      COUNT(*) AS total_24h,
+      COUNT(DISTINCT ip) AS unique_ips_24h,
+      COALESCE(ROUND(AVG(elapsed_ms), 1), 0) AS avg_elapsed_ms,
+      COALESCE(SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END), 0) AS errors_24h,
+      COALESCE(SUM(CASE WHEN status >= 200 AND status < 400 THEN 1 ELSE 0 END), 0) AS success_24h,
+      COALESCE(SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END), 0) AS total_1h
+    FROM http_traffic_log
+    WHERE created_at >= ?
+  `).get(since1h, since24h);
+
+  const activeUsers = database.prepare(`
+    SELECT COUNT(DISTINCT user_id) AS active_users_15m
+    FROM http_traffic_log
+    WHERE user_id IS NOT NULL AND created_at >= ?
+  `).get(since15m);
+
+  const hourlyRaw = database.prepare(`
+    SELECT
+      strftime('%Y-%m-%d %H:00', created_at) AS hour_slot,
+      COUNT(*) AS count,
+      COALESCE(SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END), 0) AS errors
+    FROM http_traffic_log
+    WHERE created_at >= ?
+    GROUP BY hour_slot
+    ORDER BY hour_slot ASC
+  `).all(since24h);
+
+  const hourlyMap = new Map(hourlyRaw.map((row) => [row.hour_slot, row]));
+  const timeline = [];
+  for (let i = 23; i >= 0; i--) {
+    const slotTime = new Date(now - i * 3600_000);
+    const year = slotTime.getUTCFullYear();
+    const month = String(slotTime.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(slotTime.getUTCDate()).padStart(2, "0");
+    const hour = String(slotTime.getUTCHours()).padStart(2, "0");
+    const key = `${year}-${month}-${day} ${hour}:00`;
+    const found = hourlyMap.get(key);
+    timeline.push({
+      time: key,
+      label: `${hour}:00`,
+      count: found ? found.count : 0,
+      errors: found ? found.errors : 0,
+    });
+  }
+
+  const topPaths = database.prepare(`
+    SELECT path, method, COUNT(*) AS count
+    FROM http_traffic_log
+    WHERE created_at >= ?
+    GROUP BY path, method
+    ORDER BY count DESC
+    LIMIT 10
+  `).all(since24h);
+
+  const topIps = database.prepare(`
+    SELECT ip, COUNT(*) AS count, MAX(created_at) AS last_seen
+    FROM http_traffic_log
+    WHERE created_at >= ?
+    GROUP BY ip
+    ORDER BY count DESC
+    LIMIT 10
+  `).all(since24h);
+
+  const recentRequests = database.prepare(`
+    SELECT t.id, t.method, t.path, t.status, t.elapsed_ms, t.ip, t.created_at, u.username
+    FROM http_traffic_log t
+    LEFT JOIN users u ON u.id = t.user_id
+    ORDER BY t.id DESC
+    LIMIT 40
+  `).all();
+
+  return {
+    summary: {
+      total24h: Number(summary?.total_24h || 0),
+      total1h: Number(summary?.total_1h || 0),
+      uniqueIps24h: Number(summary?.unique_ips_24h || 0),
+      activeUsers15m: Number(activeUsers?.active_users_15m || 0),
+      avgElapsedMs: Number(summary?.avg_elapsed_ms || 0),
+      errors24h: Number(summary?.errors_24h || 0),
+      success24h: Number(summary?.success_24h || 0),
+    },
+    timeline,
+    topPaths,
+    topIps,
+    recentRequests,
   };
 }
 
@@ -1243,6 +1398,16 @@ async function handleUserApi(request, response, url) {
       "Cache-Control": "public, max-age=3600",
     });
     response.end(request.method === "HEAD" ? undefined : Buffer.from(asset.data));
+    return true;
+  }
+
+  if (pathname === "/api/admin/traffic" && request.method === "GET") {
+    const user = currentUser(request, response);
+    if (!user || !isAdmin(user)) {
+      jsonError(response, user ? 403 : 401, "Only the administrator can view traffic analytics.");
+      return true;
+    }
+    send(response, 200, JSON.stringify(getAdminTrafficData()));
     return true;
   }
 
@@ -2736,6 +2901,29 @@ function serveFile(request, response, filePath) {
 }
 
 const server = http.createServer(async (request, response) => {
+  const requestStart = Date.now();
+  let reqPath = "/";
+  try {
+    reqPath = (request.url || "/").split("?")[0] || "/";
+  } catch {
+    reqPath = "/";
+  }
+  if (reqPath.length > 200) reqPath = reqPath.slice(0, 200);
+
+  response.on("finish", () => {
+    const ip = authClientAddress(request);
+    const userId = request._authenticatedUserId || null;
+    logTrafficRecord({
+      method: request.method,
+      path: reqPath,
+      status: response.statusCode || 200,
+      elapsedMs: Math.max(0, Date.now() - requestStart),
+      ip,
+      userId,
+      createdAt: new Date().toISOString(),
+    });
+  });
+
   if (!["GET", "HEAD", "POST", "DELETE"].includes(request.method)) {
     response.writeHead(405, { ...SECURITY_HEADERS, Allow: "GET, HEAD, POST, DELETE" });
     response.end();
