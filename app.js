@@ -80,6 +80,41 @@ const ui = {
   trafficTopPaths: document.querySelector("#traffic-top-paths"),
   trafficTopIps: document.querySelector("#traffic-top-ips"),
   trafficRecentLog: document.querySelector("#traffic-recent-log"),
+  editorGutter: document.querySelector("#editor-gutter"),
+  uploadFileBtn: document.querySelector("#upload-file-btn"),
+  sourceFileInput: document.querySelector("#source-file-input"),
+  toggleTestBtn: document.querySelector("#toggle-test-btn"),
+  playgroundPanel: document.querySelector("#playground-panel"),
+  pgTabSamples: document.querySelector("#pg-tab-samples"),
+  pgTabCustom: document.querySelector("#pg-tab-custom"),
+  pgRunBtn: document.querySelector("#pg-run-btn"),
+  pgCustomInputBox: document.querySelector("#pg-custom-input-box"),
+  pgCustomStdin: document.querySelector("#pg-custom-stdin"),
+  pgResultBox: document.querySelector("#pg-result-box"),
+  siteAnnouncementBanner: document.querySelector("#site-announcement-banner"),
+  announcementMessage: document.querySelector("#announcement-message"),
+  dismissAnnouncementBtn: document.querySelector("#dismiss-announcement-btn"),
+  standingsModuleSelect: document.querySelector("#standings-module-select"),
+  standingsSearchInput: document.querySelector("#standings-search-input"),
+  standingsFriendsToggle: document.querySelector("#standings-friends-toggle"),
+  standingsTableBody: document.querySelector("#standings-table-body"),
+  standingsUserCount: document.querySelector("#standings-user-count"),
+  adminAnnouncementForm: document.querySelector("#admin-announcement-form"),
+  adminAnnouncementEnabled: document.querySelector("#admin-announcement-enabled"),
+  adminAnnouncementText: document.querySelector("#admin-announcement-text"),
+  adminAnnouncementError: document.querySelector("#admin-announcement-error"),
+  adminAnnouncementSubmit: document.querySelector("#admin-announcement-submit"),
+  adminZipForm: document.querySelector("#admin-zip-form"),
+  adminZipDropzone: document.querySelector("#admin-zip-dropzone"),
+  adminZipInput: document.querySelector("#admin-zip-input"),
+  adminZipBrowseBtn: document.querySelector("#admin-zip-browse-btn"),
+  adminZipFileInfo: document.querySelector("#admin-zip-file-info"),
+  adminZipModule: document.querySelector("#admin-zip-module"),
+  adminZipGroup: document.querySelector("#admin-zip-group"),
+  adminZipCode: document.querySelector("#admin-zip-code"),
+  adminZipPoints: document.querySelector("#admin-zip-points"),
+  adminZipError: document.querySelector("#admin-zip-error"),
+  adminZipSubmit: document.querySelector("#admin-zip-submit"),
 };
 
 const EMAIL_CHALLENGE_STORAGE_KEY = "untitled-judge-email-challenge";
@@ -88,6 +123,12 @@ let progress = {};
 let submissions = [];
 let currentUser = null;
 let authConfig = { firebase: { enabled: false }, emailConfirmation: { enabled: false, mode: "unconfigured" } };
+let statusPollTimeout = null;
+let currentStandings = [];
+let standingsModule = "all";
+let standingsSearch = "";
+let standingsFriendsOnly = false;
+let pendingZipBase64 = null;
 let authMode = "login";
 let pendingChallenge = null;
 let pendingFirebaseIdToken = "";
@@ -220,6 +261,7 @@ function userChanged() {
   renderCounts();
   renderProblems();
   if (location.hash === "#status") renderStatusPage();
+  if (location.hash === "#standings") renderStandingsPage();
   if (location.hash === "#progress") renderProgressPage();
   if (location.hash === "#account") renderAccountPage();
   if (location.hash.startsWith("#user/")) renderUserProfile(Number(location.hash.slice("#user/".length)));
@@ -230,11 +272,23 @@ function userChanged() {
   if (activeProblemId) renderProblem();
 }
 
+function renderAnnouncementBanner(announcement) {
+  if (!ui.siteAnnouncementBanner) return;
+  const isDismissed = sessionStorage.getItem("untitled_judge_announcement_dismissed") === "true";
+  if (announcement && announcement.enabled && announcement.text && !isDismissed) {
+    ui.announcementMessage.textContent = announcement.text;
+    ui.siteAnnouncementBanner.classList.remove("hidden");
+  } else {
+    ui.siteAnnouncementBanner.classList.add("hidden");
+  }
+}
+
 async function loadCurrentUser() {
   const result = await apiRequest("/api/auth/me");
   currentUser = result.user;
   progress = result.progress || {};
   if (result.authConfig) authConfig = result.authConfig;
+  if (result.announcement) renderAnnouncementBanner(result.announcement);
 }
 
 function renderCounts() {
@@ -283,6 +337,7 @@ function setSelectedProblem(problemId) {
   ui.selectedProblemInfo.innerHTML = `<strong>${escapeHtml(problem.module)} / ${escapeHtml(problem.group)}</strong> · ${problem.testcaseCount} testcases · ${problem.statement ? `<a href="#problem/${encodeURIComponent(problem.id)}">view statement</a>` : "no statement PDF"}`;
   ui.sourceEditor.value = loadDraft(problem.id, ui.submitLanguage.value);
   updateLanguageHint();
+  updateEditorGutter();
 }
 
 function exactProblemCodeMatches(query) {
@@ -791,7 +846,12 @@ function switchPage(pageName, navPageName = pageName) {
     link.classList.toggle("active", link.dataset.pageLink === navPageName)
   );
   if (pageName !== "admin") stopAdminTrafficPolling();
+  if (pageName !== "status" && statusPollTimeout) {
+    clearTimeout(statusPollTimeout);
+    statusPollTimeout = null;
+  }
   if (pageName === "status") renderStatusPage();
+  if (pageName === "standings") renderStandingsPage();
   if (pageName === "progress") renderProgressPage();
   if (pageName === "account") renderAccountPage();
   if (pageName === "user") renderUserProfile(activeProfileId);
@@ -839,7 +899,7 @@ function handleRoute() {
   }
   activeProblemId = "";
   activeForumThreadId = 0;
-  const pageName = ["problems", "submit", "status", "progress", "account", "admin", "forum"].includes(hash) ? hash : "problems";
+  const pageName = ["problems", "submit", "status", "standings", "progress", "account", "admin", "forum"].includes(hash) ? hash : "problems";
   if (pageName === "admin" && !currentUser?.isAdmin) {
     location.hash = "problems";
     return;
@@ -1310,11 +1370,14 @@ function renderAdminPage() {
   ui.adminProblemForm.classList.toggle("hidden", !canAdmin);
   ui.adminEditForm.classList.toggle("hidden", !canAdmin);
   ui.adminAuthForm.classList.toggle("hidden", !canAdmin);
+  if (ui.adminAnnouncementForm) ui.adminAnnouncementForm.classList.toggle("hidden", !canAdmin);
+  if (ui.adminZipForm) ui.adminZipForm.classList.toggle("hidden", !canAdmin);
   if (canAdmin) {
     void loadAdminTrafficDashboard();
     startAdminTrafficPolling();
     void loadAdminProblemOptions();
     void loadAdminAuthSettings();
+    void loadAdminAnnouncement();
   } else {
     stopAdminTrafficPolling();
   }
@@ -1533,6 +1596,108 @@ async function createAdminProblem(event) {
   }
 }
 
+async function loadAdminAnnouncement() {
+  if (!ui.adminAnnouncementForm) return;
+  showFormError(ui.adminAnnouncementError, "");
+  try {
+    const data = await apiRequest("/api/announcement");
+    ui.adminAnnouncementEnabled.checked = Boolean(data.enabled);
+    ui.adminAnnouncementText.value = data.text || "";
+  } catch (error) {
+    showFormError(ui.adminAnnouncementError, error.message);
+  }
+}
+
+async function saveAdminAnnouncement(event) {
+  event.preventDefault();
+  if (!currentUser?.isAdmin) return;
+  ui.adminAnnouncementSubmit.disabled = true;
+  showFormError(ui.adminAnnouncementError, "");
+  try {
+    const enabled = ui.adminAnnouncementEnabled.checked;
+    const text = ui.adminAnnouncementText.value.trim();
+    const result = await apiRequest("/api/admin/announcement", {
+      method: "POST",
+      body: JSON.stringify({ enabled, text }),
+    });
+    sessionStorage.removeItem("untitled_judge_announcement_dismissed");
+    renderAnnouncementBanner({ enabled: result.enabled, text: result.text });
+    showFormError(ui.adminAnnouncementError, "Announcement settings saved.");
+  } catch (error) {
+    showFormError(ui.adminAnnouncementError, error.message);
+  } finally {
+    ui.adminAnnouncementSubmit.disabled = false;
+  }
+}
+
+function handleZipFileSelect(file) {
+  if (!file) return;
+  if (!/\.zip$/i.test(file.name)) {
+    showFormError(ui.adminZipError, "Please choose a valid .zip archive.");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const arrayBuf = e.target.result;
+    const bytes = new Uint8Array(arrayBuf);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    pendingZipBase64 = btoa(binary);
+    ui.adminZipFileInfo.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+    showFormError(ui.adminZipError, "");
+
+    if (!ui.adminZipCode.value) {
+      ui.adminZipCode.value = file.name.replace(/\.zip$/i, "").toLowerCase();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function handleAdminZipSubmit(event) {
+  event.preventDefault();
+  if (!currentUser?.isAdmin) return;
+  if (!pendingZipBase64) {
+    showFormError(ui.adminZipError, "Please choose or drop a problem ZIP file first.");
+    return;
+  }
+  const module = ui.adminZipModule.value.trim();
+  const group = ui.adminZipGroup.value.trim();
+  const code = ui.adminZipCode.value.trim();
+  const points = Number(ui.adminZipPoints.value) || 100;
+  if (!module || !code) {
+    showFormError(ui.adminZipError, "Module and problem code are required.");
+    return;
+  }
+  ui.adminZipSubmit.disabled = true;
+  showFormError(ui.adminZipError, "Importing problem package…");
+  try {
+    const res = await apiRequest("/api/admin/problems/import-zip", {
+      method: "POST",
+      body: JSON.stringify({
+        zipBase64: pendingZipBase64,
+        module,
+        group,
+        code,
+        points,
+      }),
+    });
+    showFormError(ui.adminZipError, `Successfully imported "${res.problem.title}" with ${res.problem.testcaseCount} testcases!`);
+    pendingZipBase64 = null;
+    ui.adminZipFileInfo.textContent = "No file chosen";
+    ui.adminZipForm.reset();
+    problems = await apiRequest("/api/problems");
+    renderMetadata();
+    renderProblems();
+    await loadAdminProblemOptions();
+  } catch (error) {
+    showFormError(ui.adminZipError, error.message);
+  } finally {
+    ui.adminZipSubmit.disabled = false;
+  }
+}
+
 function ratingMarkup(problem) {
   const average = Number.isFinite(problem.ratingAverage)
     ? `${problem.ratingAverage.toFixed(1)} / 5`
@@ -1610,6 +1775,63 @@ async function renderProblem() {
   }
 }
 
+function renderOutputDiff(expected, actual) {
+  if (expected === undefined || actual === undefined) return "";
+  const expStr = String(expected);
+  const actStr = String(actual);
+
+  const normalize = (s) => s.trim().split(/\r?\n/).map((l) => l.trimEnd()).filter((l) => l.length > 0).join("\n");
+  const isWhitespaceOnlyDiff = (expStr !== actStr) && (normalize(expStr) === normalize(actStr));
+
+  const expLines = expStr.replace(/\r\n/g, "\n").split("\n");
+  const actLines = actStr.replace(/\r\n/g, "\n").split("\n");
+
+  if (expLines.length > 1 && expLines[expLines.length - 1] === "") expLines.pop();
+  if (actLines.length > 1 && actLines[actLines.length - 1] === "") actLines.pop();
+
+  const maxLines = Math.max(expLines.length, actLines.length);
+  const limit = Math.min(maxLines, 50);
+
+  let rows = "";
+  for (let i = 0; i < limit; i++) {
+    const expLine = i < expLines.length ? expLines[i] : null;
+    const actLine = i < actLines.length ? actLines[i] : null;
+    const isMismatch = expLine !== actLine;
+    const rowClass = isMismatch ? "diff-mismatch" : "diff-same";
+
+    const expDisplay = expLine !== null ? escapeHtml(expLine) : '<span class="diff-eof">(end of output)</span>';
+    const actDisplay = actLine !== null ? escapeHtml(actLine) : '<span class="diff-eof">(end of output)</span>';
+
+    rows += `<tr class="${rowClass}">
+      <td class="diff-line-no">${i + 1}</td>
+      <td>${expDisplay || '<span class="diff-empty">(empty line)</span>'}</td>
+      <td>${actDisplay || '<span class="diff-empty">(empty line)</span>'}</td>
+    </tr>`;
+  }
+
+  if (maxLines > limit) {
+    rows += `<tr><td colspan="3" class="diff-eof" style="text-align: center; padding: 4px;">… (${maxLines - limit} more lines truncated)</td></tr>`;
+  }
+
+  const warningMarkup = isWhitespaceOnlyDiff
+    ? `<div class="diff-notice"><span class="warning-tag">WHITESPACE MISMATCH</span> Output tokens match, but differences exist in line endings or trailing spaces.</div>`
+    : "";
+
+  return `${warningMarkup}
+    <div class="diff-table-container">
+      <table class="diff-table">
+        <thead>
+          <tr>
+            <th style="width: 35px;">#</th>
+            <th>EXPECTED</th>
+            <th>YOUR OUTPUT</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
 function submissionDisplay(result) {
   const submission = result.submission || {};
   if (result.error && (!result.tests || !result.tests.length)) {
@@ -1626,7 +1848,17 @@ function submissionDisplay(result) {
     : "";
   const compiler = result.compilerOutput ? `<pre class="compiler-output">${escapeHtml(result.compilerOutput)}</pre>` : "";
   const points = submission.pointsEarned ? `<span>+${submission.pointsEarned} points</span>` : "";
-  return `<div class="submission-summary ${verdict === "AC" ? "verdict-ac" : "verdict-fail"}"><strong>${escapeHtml(verdict)}</strong><span>${escapeHtml(summary)}</span><span>${result.passed ?? 0}/${result.tests.length} tests · ${escapeHtml(languageName(result.language))}</span>${points}</div>${failureList}${compiler}<a href="#status">Open submission status →</a>`;
+
+  const sampleMismatch = result.tests?.find((test) => test.sample && test.verdict !== "AC" && test.expected !== undefined && test.actual !== undefined);
+  const sampleDiff = sampleMismatch ? `<div class="sample-card" style="margin-top: 10px;">
+    <div class="sample-card-header">
+      <strong>SAMPLE TESTCASE ${sampleMismatch.number} MISMATCH (${sampleMismatch.verdict})</strong>
+    </div>
+    ${sampleMismatch.input ? `<div style="padding: 6px 10px; font-size: 11px; font-family: var(--mono); background: var(--bg-card); border-bottom: 1px solid var(--border);"><strong>Input:</strong><pre style="margin: 4px 0; font-size: 11px;">${escapeHtml(sampleMismatch.input)}</pre></div>` : ""}
+    ${renderOutputDiff(sampleMismatch.expected, sampleMismatch.actual)}
+  </div>` : "";
+
+  return `<div class="submission-summary ${verdict === "AC" ? "verdict-ac" : "verdict-fail"}"><strong>${escapeHtml(verdict)}</strong><span>${escapeHtml(summary)}</span><span>${result.passed ?? 0}/${result.tests.length} tests · ${escapeHtml(languageName(result.language))}</span>${points}</div>${failureList}${sampleDiff}${compiler}<a href="#status">Open submission status →</a>`;
 }
 
 async function submitCode() {
@@ -1661,18 +1893,41 @@ async function submitCode() {
   ui.submitButton.disabled = true;
   ui.submitButton.textContent = "JUDGING…";
   ui.submitResult.classList.remove("hidden");
-  ui.submitResult.innerHTML = `<div class="inline-notice">Your submission is queued. The judge processes one submission at a time, then checks ${problem.testcaseCount} testcases. Please keep this page open for the result.</div>`;
+  ui.submitResult.innerHTML = `<div class="inline-notice notice-running"><span class="live-dot-blue"></span> <strong>In Queue</strong> — Waiting for sandbox worker…</div>`;
+
+  let activePollInterval = setInterval(async () => {
+    try {
+      const activeRes = await apiRequest("/api/submissions/active");
+      if (activeRes && activeRes.active && activeRes.submission) {
+        const sub = activeRes.submission;
+        const msg = sub.verdict === "RUNNING"
+          ? (sub.message || "Running…")
+          : "In Queue — Waiting for sandbox worker…";
+        ui.submitResult.innerHTML = `<div class="inline-notice notice-running"><span class="live-dot-blue"></span> <strong>${escapeHtml(msg)}</strong></div>`;
+      }
+    } catch {
+      // ignore transient error
+    }
+  }, 750);
+
   try {
     const result = await apiRequest("/api/run", {
       method: "POST",
       body: JSON.stringify({ problemId: problem.id, language, source }),
     });
+    clearInterval(activePollInterval);
+    activePollInterval = null;
     if (result.submission?.verdict === "AC") progress[problem.id] = "solved";
     ui.submitResult.innerHTML = submissionDisplay(result);
   } catch (error) {
+    if (activePollInterval) {
+      clearInterval(activePollInterval);
+      activePollInterval = null;
+    }
     ui.submitResult.innerHTML = `<div class="inline-notice">${escapeHtml(error.message)}</div>`;
     if (error.status === 401) openAuthDialog("login");
   } finally {
+    if (activePollInterval) clearInterval(activePollInterval);
     runningSubmission = false;
     ui.submitButton.textContent = "SUBMIT & RUN";
     ui.submitButton.disabled = !problems.some((item) => item.id === ui.submitProblem.value && item.testcaseCount > 0) || !currentUser;
@@ -1689,9 +1944,25 @@ function clearSubmissionStatus(message) {
 function renderSubmissionDetail(index) {
   const submission = submissions[index];
   if (!submission) return "";
-  const tests = (submission.tests || []).map((test) =>
-    `<li class="${test.verdict === "AC" ? "verdict-ac" : "verdict-fail"}">Test ${test.number}: ${escapeHtml(test.verdict)} (${escapeHtml(formatTime(test.elapsedMs))})</li>`
-  ).join("");
+  if (submission.verdict === "IN_QUEUE" || submission.verdict === "RUNNING") {
+    return `<div class="inline-notice notice-running"><span class="live-dot-blue"></span> <strong>${escapeHtml(submission.verdict === "RUNNING" ? "Execution in progress…" : "Submission in queue…")}</strong><div style="margin-top: 4px;">${escapeHtml(submission.message || "Waiting for sandbox worker…")}</div></div>`;
+  }
+  const tests = (submission.tests || []).map((test) => {
+    let diffMarkup = "";
+    if (test.sample && test.verdict !== "AC" && test.expected !== undefined && test.actual !== undefined) {
+      diffMarkup = `<div class="sample-card" style="margin-top: 8px;">
+        <div class="sample-card-header">
+          <strong>SAMPLE TESTCASE ${test.number} MISMATCH (${test.verdict})</strong>
+        </div>
+        ${test.input ? `<div style="padding: 6px 10px; font-size: 11px; font-family: var(--mono); background: var(--bg-card); border-bottom: 1px solid var(--border);"><strong>Input:</strong><pre style="margin: 4px 0; font-size: 11px;">${escapeHtml(test.input)}</pre></div>` : ""}
+        ${renderOutputDiff(test.expected, test.actual)}
+      </div>`;
+    }
+    return `<li class="${test.verdict === "AC" ? "verdict-ac" : "verdict-fail"}">
+      Test ${test.number}: ${escapeHtml(test.verdict)} (${escapeHtml(formatTime(test.elapsedMs))})
+      ${diffMarkup}
+    </li>`;
+  }).join("");
   const details = submission.message ? `<div>${escapeHtml(submission.message)}</div>` : "";
   const output = submission.compilerOutput ? `<pre class="compiler-output">${escapeHtml(submission.compilerOutput)}</pre>` : "";
   return `${details}${output}${tests ? `<ol class="case-list">${tests}</ol>` : ""}`;
@@ -1709,13 +1980,28 @@ async function renderStatusPage() {
       renderCounts();
       return;
     }
+    let hasActive = false;
     ui.submissionList.innerHTML = submissions.map((submission, index) => {
-      const verdictClass = submission.verdict === "AC" ? "verdict-ac" :
-        ["WA", "TLE", "RTE", "OLE"].includes(submission.verdict) ? "verdict-fail" : "verdict-other";
+      let verdictClass = "verdict-other";
+      let verdictContent = escapeHtml(submission.verdict);
+      if (submission.verdict === "AC") {
+        verdictClass = "verdict-ac";
+      } else if (submission.verdict === "RUNNING") {
+        verdictClass = "verdict-running";
+        verdictContent = `<span class="live-dot-blue"></span> ${escapeHtml(submission.message || "RUNNING")}`;
+        hasActive = true;
+      } else if (submission.verdict === "IN_QUEUE") {
+        verdictClass = "verdict-queue";
+        verdictContent = `<span class="live-dot-blue"></span> IN QUEUE`;
+        hasActive = true;
+      } else if (["WA", "TLE", "RTE", "OLE"].includes(submission.verdict)) {
+        verdictClass = "verdict-fail";
+      }
+
       return `<tr>
         <td>${escapeHtml(formatDate(submission.createdAt))}</td>
         <td><a href="#problem/${encodeURIComponent(submission.problemId)}">${escapeHtml(submission.code)} - ${escapeHtml(submission.title)}</a></td>
-        <td><button class="verdict-link ${verdictClass}" data-action="submission-detail" data-index="${index}">${escapeHtml(submission.verdict)}</button></td>
+        <td><button class="verdict-link ${verdictClass}" data-action="submission-detail" data-index="${index}">${verdictContent}</button></td>
         <td>${submission.passed ?? 0} / ${submission.total ?? 0}</td>
         <td>${escapeHtml(languageName(submission.language))}</td>
         <td>${escapeHtml(formatTime(submission.elapsedMs))}</td>
@@ -1723,9 +2009,219 @@ async function renderStatusPage() {
       <tr class="submission-detail-row hidden" data-submission-detail="${index}"><td colspan="6">${renderSubmissionDetail(index)}</td></tr>`;
     }).join("");
     renderCounts();
+
+    if (hasActive) {
+      clearTimeout(statusPollTimeout);
+      statusPollTimeout = setTimeout(() => {
+        if (location.hash === "#status") renderStatusPage();
+      }, 1000);
+    }
   } catch (error) {
     clearSubmissionStatus(error.message);
   }
+}
+
+async function renderStandingsPage() {
+  ui.standingsTableBody.innerHTML = '<tr><td colspan="6" class="table-placeholder">Loading standings…</td></tr>';
+  try {
+    const data = await apiRequest(`/api/leaderboard?module=${encodeURIComponent(standingsModule)}&friendsOnly=${standingsFriendsOnly}`);
+    currentStandings = data.leaderboard || [];
+
+    if (ui.standingsModuleSelect && data.modules) {
+      const currentVal = ui.standingsModuleSelect.value;
+      const opts = ['<option value="all">All Problems</option>'].concat(
+        data.modules.map((m) => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`)
+      ).join("");
+      ui.standingsModuleSelect.innerHTML = opts;
+      if (currentVal && Array.from(ui.standingsModuleSelect.options).some((o) => o.value === currentVal)) {
+        ui.standingsModuleSelect.value = currentVal;
+      }
+    }
+
+    renderStandingsTable();
+  } catch (err) {
+    ui.standingsTableBody.innerHTML = `<tr><td colspan="6" class="table-placeholder">${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderStandingsTable() {
+  let list = currentStandings;
+  if (standingsSearch) {
+    const q = standingsSearch.toLowerCase();
+    list = list.filter((u) => u.username.toLowerCase().includes(q));
+  }
+
+  if (ui.standingsUserCount) {
+    ui.standingsUserCount.textContent = `${list.length} CODER${list.length === 1 ? "" : "S"}`;
+  }
+
+  if (!list.length) {
+    ui.standingsTableBody.innerHTML = '<tr><td colspan="6" class="table-placeholder">No coders found matching criteria.</td></tr>';
+    return;
+  }
+
+  ui.standingsTableBody.innerHTML = list.map((user) => {
+    const isMe = currentUser && user.id === currentUser.id;
+    let rankBadge = `<span class="rank-pill">${user.rank}</span>`;
+    if (user.rank === 1) rankBadge = `<span class="rank-pill rank-1">#1</span>`;
+    else if (user.rank === 2) rankBadge = `<span class="rank-pill rank-2">#2</span>`;
+    else if (user.rank === 3) rankBadge = `<span class="rank-pill rank-3">#3</span>`;
+
+    const avatar = user.avatarUrl
+      ? `<img class="standings-avatar" src="${escapeHtml(user.avatarUrl)}" alt="">`
+      : `<span class="standings-avatar standings-avatar-initial" style="display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:var(--bg-card);">${escapeHtml(user.username.slice(0, 1).toUpperCase())}</span>`;
+
+    return `<tr class="${isMe ? "current-user-row" : ""}">
+      <td>${rankBadge}</td>
+      <td>
+        <div class="standings-coder-cell">
+          ${avatar}
+          <a class="forum-user-link" href="#user/${user.id}">${escapeHtml(user.username)}</a>
+          ${isMe ? '<span class="you-badge" style="font-size:8px;padding:1px 4px;background:#2b7794;color:#fff;border-radius:2px;font-weight:700;">YOU</span>' : ""}
+        </div>
+      </td>
+      <td><strong>${user.solvedCount}</strong></td>
+      <td>${user.totalPoints} pts</td>
+      <td>${user.totalSubmissions}</td>
+      <td>${user.accuracy}%</td>
+    </tr>`;
+  }).join("");
+}
+
+let playgroundTab = "samples";
+
+async function runPlaygroundTest() {
+  if (!currentUser) {
+    openAuthDialog("login");
+    showFormError(ui.accountError, "Log in before testing code.");
+    return;
+  }
+  const source = ui.sourceEditor.value;
+  const language = ui.submitLanguage.value;
+  const problemId = ui.submitProblem.value;
+
+  if (playgroundTab === "samples" && !problemId) {
+    ui.pgResultBox.classList.remove("hidden");
+    ui.pgResultBox.innerHTML = '<div class="inline-notice">Please select a problem first to test against its sample cases.</div>';
+    return;
+  }
+
+  ui.pgRunBtn.disabled = true;
+  ui.pgRunBtn.textContent = "RUNNING…";
+  ui.pgResultBox.classList.remove("hidden");
+  ui.pgResultBox.innerHTML = '<div class="inline-notice notice-running"><span class="live-dot-blue"></span> Compiling and executing in sandbox…</div>';
+
+  try {
+    const payload = {
+      language,
+      source,
+      runSamples: playgroundTab === "samples",
+      problemId: playgroundTab === "samples" ? problemId : undefined,
+      input: playgroundTab === "custom" ? (ui.pgCustomStdin.value || "") : undefined,
+    };
+    const res = await apiRequest("/api/playground/run", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      if (res.status === "CE") {
+        ui.pgResultBox.innerHTML = `<div class="submission-summary verdict-fail"><strong>COMPILATION ERROR</strong><span>Your code could not be compiled.</span></div><pre class="compiler-output">${escapeHtml(res.compilerOutput || "Compilation failed.")}</pre>`;
+      } else {
+        ui.pgResultBox.innerHTML = `<div class="inline-notice">${escapeHtml(res.error || "Execution failed.")}</div>`;
+      }
+      return;
+    }
+
+    if (res.type === "samples") {
+      let html = `<div class="submission-summary ${res.allPassed ? "verdict-ac" : "verdict-fail"}">
+        <strong>${res.allPassed ? "ALL SAMPLES PASSED" : "SAMPLE MISMATCH"}</strong>
+        <span>${res.results.filter((r) => r.verdict === "AC").length} of ${res.results.length} sample cases passed</span>
+      </div>`;
+
+      for (const item of res.results) {
+        const isAc = item.verdict === "AC";
+        html += `<div class="sample-card" style="margin-top: 10px;">
+          <div class="sample-card-header">
+            <strong>Sample ${item.number}: <span class="${isAc ? "verdict-ac" : "verdict-fail"}">${item.verdict}</span></strong>
+            <span>${escapeHtml(formatTime(item.elapsedMs))}</span>
+          </div>
+          <div style="padding: 8px 10px; font-size: 11px; font-family: var(--mono); background: var(--bg-card); border-bottom: 1px solid var(--border);">
+            <strong>Input:</strong>
+            <pre style="margin: 4px 0 0 0; font-size: 11px; max-height: 80px; overflow-y: auto;">${escapeHtml(item.input)}</pre>
+          </div>
+          ${item.stderr ? `<div style="padding: 6px 10px; font-size: 11px; font-family: var(--mono); background: #fff3cd; color: #856404; border-bottom: 1px solid var(--border);"><strong>Stderr:</strong><pre style="margin: 4px 0 0 0; font-size: 11px;">${escapeHtml(item.stderr)}</pre></div>` : ""}
+          ${isAc
+            ? `<div style="padding: 8px 10px; font-size: 11px; font-family: var(--mono); color: #2e7d32;">✓ Output matched expected output</div>`
+            : renderOutputDiff(item.expected, item.actual)
+          }
+        </div>`;
+      }
+      ui.pgResultBox.innerHTML = html;
+    } else if (res.type === "custom") {
+      let statusTag = "FINISHED";
+      let statusClass = "verdict-ac";
+      if (res.stopReason) {
+        statusTag = res.stopReason;
+        statusClass = "verdict-fail";
+      } else if (res.exitCode !== 0) {
+        statusTag = `RUNTIME ERROR (EXIT ${res.exitCode})`;
+        statusClass = "verdict-fail";
+      }
+
+      ui.pgResultBox.innerHTML = `
+        <div class="submission-summary ${statusClass}">
+          <strong>${statusTag}</strong>
+          <span>Time: ${escapeHtml(formatTime(res.elapsedMs))} · Exit: ${res.exitCode}</span>
+        </div>
+        <div class="sample-card" style="margin-top: 10px;">
+          <div class="sample-card-header"><strong>STANDARD OUTPUT</strong></div>
+          <pre style="margin: 0; padding: 10px; font-size: 11px; font-family: var(--mono); max-height: 180px; overflow-y: auto; white-space: pre-wrap;">${escapeHtml(res.stdout || "(no output produced)")}</pre>
+        </div>
+        ${res.stderr ? `<div class="sample-card" style="margin-top: 8px; border-color: #f5c6cb;">
+          <div class="sample-card-header" style="background: #f8d7da; color: #721c24;"><strong>STANDARD ERROR</strong></div>
+          <pre style="margin: 0; padding: 10px; font-size: 11px; font-family: var(--mono); max-height: 120px; overflow-y: auto; white-space: pre-wrap;">${escapeHtml(res.stderr)}</pre>
+        </div>` : ""}
+      `;
+    }
+  } catch (err) {
+    ui.pgResultBox.innerHTML = `<div class="inline-notice">${escapeHtml(err.message)}</div>`;
+  } finally {
+    ui.pgRunBtn.disabled = false;
+    ui.pgRunBtn.textContent = playgroundTab === "samples" ? "RUN SAMPLE CASES" : "RUN CUSTOM INPUT";
+  }
+}
+
+function updateEditorGutter() {
+  if (!ui.editorGutter || !ui.sourceEditor) return;
+  const lineCount = (ui.sourceEditor.value.split("\n")).length || 1;
+  let numbers = "";
+  for (let i = 1; i <= lineCount; i++) {
+    numbers += i + "\n";
+  }
+  ui.editorGutter.textContent = numbers;
+}
+
+function detectLanguageFromFilename(filename) {
+  if (/\.c$/i.test(filename)) return "c";
+  if (/\.(cpp|cc|cxx|c\+\+)$/i.test(filename)) return "cpp";
+  if (/\.py$/i.test(filename)) return "python";
+  return null;
+}
+
+function loadSourceFromFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    ui.sourceEditor.value = e.target.result;
+    const lang = detectLanguageFromFilename(file.name);
+    if (lang && ui.submitLanguage) {
+      ui.submitLanguage.value = lang;
+      updateLanguageHint();
+    }
+    updateEditorGutter();
+  };
+  reader.readAsText(file);
 }
 
 async function loadForum() {
@@ -2023,6 +2519,7 @@ async function initialize() {
     } else {
       handleRoute();
     }
+    updateEditorGutter();
   } catch (error) {
     ui.archive.innerHTML = `<div class="inline-notice">${escapeHtml(error.message)} Start the server from the problemset folder and reload.</div>`;
     ui.resultCount.textContent = "ARCHIVE OFFLINE";
@@ -2057,14 +2554,93 @@ ui.submitLanguage.addEventListener("change", () => {
   const problemId = ui.submitProblem.value;
   if (problemId) ui.sourceEditor.value = loadDraft(problemId, ui.submitLanguage.value);
   updateLanguageHint();
+  updateEditorGutter();
 });
 ui.sourceEditor.addEventListener("input", () => {
   const problemId = ui.submitProblem.value;
+  updateEditorGutter();
   if (!problemId) return;
   try {
     localStorage.setItem(languageDraftKey(problemId, ui.submitLanguage.value), ui.sourceEditor.value);
   } catch {
     showFormError(ui.submitResult, "Could not save this code draft in browser storage.");
+  }
+});
+ui.sourceEditor.addEventListener("scroll", () => {
+  if (ui.editorGutter) ui.editorGutter.scrollTop = ui.sourceEditor.scrollTop;
+});
+ui.sourceEditor.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const editor = ui.sourceEditor;
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    const value = editor.value;
+
+    if (e.shiftKey) {
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      let lineEnd = value.indexOf("\n", end);
+      if (lineEnd === -1) lineEnd = value.length;
+
+      const lines = value.slice(lineStart, lineEnd).split("\n");
+      let removedCharsFirstLine = 0;
+      let totalRemoved = 0;
+
+      const modifiedLines = lines.map((line, idx) => {
+        let spacesToRemove = 0;
+        while (spacesToRemove < 4 && line[spacesToRemove] === " ") {
+          spacesToRemove++;
+        }
+        if (spacesToRemove === 0 && line[0] === "\t") spacesToRemove = 1;
+        if (idx === 0) removedCharsFirstLine = spacesToRemove;
+        totalRemoved += spacesToRemove;
+        return line.slice(spacesToRemove);
+      });
+
+      editor.value = value.slice(0, lineStart) + modifiedLines.join("\n") + value.slice(lineEnd);
+      editor.selectionStart = Math.max(lineStart, start - removedCharsFirstLine);
+      editor.selectionEnd = Math.max(lineStart, end - totalRemoved);
+    } else {
+      if (start !== end && value.slice(start, end).includes("\n")) {
+        const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+        let lineEnd = value.indexOf("\n", end);
+        if (lineEnd === -1) lineEnd = value.length;
+
+        const lines = value.slice(lineStart, lineEnd).split("\n");
+        const modifiedLines = lines.map((line) => "    " + line);
+        editor.value = value.slice(0, lineStart) + modifiedLines.join("\n") + value.slice(lineEnd);
+        editor.selectionStart = start + 4;
+        editor.selectionEnd = end + (lines.length * 4);
+      } else {
+        editor.value = value.slice(0, start) + "    " + value.slice(end);
+        editor.selectionStart = editor.selectionEnd = start + 4;
+      }
+    }
+    updateEditorGutter();
+    return;
+  }
+
+  if (e.key === "Enter") {
+    const editor = ui.sourceEditor;
+    const start = editor.selectionStart;
+    const value = editor.value;
+
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const currentLine = value.slice(lineStart, start);
+    const match = currentLine.match(/^(\s*)/);
+    let indent = match ? match[1] : "";
+
+    const trimmed = currentLine.trim();
+    if (trimmed.endsWith("{") || trimmed.endsWith(":")) {
+      indent += "    ";
+    }
+
+    if (indent) {
+      e.preventDefault();
+      editor.value = value.slice(0, start) + "\n" + indent + value.slice(start);
+      editor.selectionStart = editor.selectionEnd = start + 1 + indent.length;
+      updateEditorGutter();
+    }
   }
 });
 ui.submitButton.addEventListener("click", submitCode);
@@ -2208,6 +2784,128 @@ document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   if (ui.accountDialog.open) closeAccountDialog();
 });
+
+if (ui.uploadFileBtn && ui.sourceFileInput) {
+  ui.uploadFileBtn.addEventListener("click", () => ui.sourceFileInput.click());
+  ui.sourceFileInput.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      loadSourceFromFile(file);
+      ui.sourceFileInput.value = "";
+    }
+  });
+}
+
+const editorWrapper = document.querySelector("#code-editor-wrapper");
+if (editorWrapper) {
+  editorWrapper.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    editorWrapper.classList.add("editor-dragover");
+  });
+  editorWrapper.addEventListener("dragleave", (e) => {
+    if (!editorWrapper.contains(e.relatedTarget)) {
+      editorWrapper.classList.remove("editor-dragover");
+    }
+  });
+  editorWrapper.addEventListener("drop", (e) => {
+    e.preventDefault();
+    editorWrapper.classList.remove("editor-dragover");
+    const file = e.dataTransfer.files?.[0];
+    if (file) loadSourceFromFile(file);
+  });
+}
+
+if (ui.toggleTestBtn && ui.playgroundPanel) {
+  ui.toggleTestBtn.addEventListener("click", () => {
+    const isHidden = ui.playgroundPanel.classList.toggle("hidden");
+    ui.toggleTestBtn.textContent = isHidden ? "▶ TEST CODE" : "▼ HIDE TESTER";
+  });
+}
+
+if (ui.pgTabSamples && ui.pgTabCustom) {
+  ui.pgTabSamples.addEventListener("click", () => {
+    playgroundTab = "samples";
+    ui.pgTabSamples.classList.add("active");
+    ui.pgTabCustom.classList.remove("active");
+    ui.pgCustomInputBox.classList.add("hidden");
+    ui.pgRunBtn.textContent = "RUN SAMPLE CASES";
+  });
+
+  ui.pgTabCustom.addEventListener("click", () => {
+    playgroundTab = "custom";
+    ui.pgTabCustom.classList.add("active");
+    ui.pgTabSamples.classList.remove("active");
+    ui.pgCustomInputBox.classList.remove("hidden");
+    ui.pgRunBtn.textContent = "RUN CUSTOM INPUT";
+  });
+}
+
+if (ui.pgRunBtn) {
+  ui.pgRunBtn.addEventListener("click", runPlaygroundTest);
+}
+
+if (ui.standingsModuleSelect) {
+  ui.standingsModuleSelect.addEventListener("change", () => {
+    standingsModule = ui.standingsModuleSelect.value;
+    renderStandingsPage();
+  });
+}
+
+if (ui.standingsSearchInput) {
+  ui.standingsSearchInput.addEventListener("input", () => {
+    standingsSearch = ui.standingsSearchInput.value.trim();
+    renderStandingsTable();
+  });
+}
+
+if (ui.standingsFriendsToggle) {
+  ui.standingsFriendsToggle.addEventListener("change", () => {
+    standingsFriendsOnly = ui.standingsFriendsToggle.checked;
+    renderStandingsPage();
+  });
+}
+
+if (ui.dismissAnnouncementBtn) {
+  ui.dismissAnnouncementBtn.addEventListener("click", () => {
+    sessionStorage.setItem("untitled_judge_announcement_dismissed", "true");
+    if (ui.siteAnnouncementBanner) ui.siteAnnouncementBanner.classList.add("hidden");
+  });
+}
+
+if (ui.adminAnnouncementForm) {
+  ui.adminAnnouncementForm.addEventListener("submit", saveAdminAnnouncement);
+}
+
+if (ui.adminZipBrowseBtn && ui.adminZipInput) {
+  ui.adminZipBrowseBtn.addEventListener("click", () => ui.adminZipInput.click());
+}
+
+if (ui.adminZipInput) {
+  ui.adminZipInput.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) handleZipFileSelect(file);
+  });
+}
+
+if (ui.adminZipDropzone) {
+  ui.adminZipDropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    ui.adminZipDropzone.classList.add("dragover");
+  });
+  ui.adminZipDropzone.addEventListener("dragleave", () => {
+    ui.adminZipDropzone.classList.remove("dragover");
+  });
+  ui.adminZipDropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    ui.adminZipDropzone.classList.remove("dragover");
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleZipFileSelect(file);
+  });
+}
+
+if (ui.adminZipForm) {
+  ui.adminZipForm.addEventListener("submit", handleAdminZipSubmit);
+}
 
 setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
 initialize();

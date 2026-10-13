@@ -9,6 +9,7 @@ const { spawn } = require("node:child_process");
 const crypto = require("node:crypto");
 const { promisify } = require("node:util");
 const { DatabaseSync } = require("node:sqlite");
+const zlib = require("node:zlib");
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT) || 4173;
@@ -44,6 +45,7 @@ const MAX_AVATAR_REQUEST_BYTES = Math.ceil(MAX_FORUM_IMAGE_BYTES * 4 / 3) + 4096
 const judgeQueue = [];
 let judgeWorkerRunning = false;
 let activeJudgeUserId = null;
+let activeJudgeSubmissionId = null;
 const authAttempts = new Map();
 const SESSION_LIFETIME = 12 * 60 * 60 * 1000;
 const LOGIN_CHALLENGE_LIFETIME = 10 * 60 * 1000;
@@ -270,7 +272,22 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS http_traffic_created_at ON http_traffic_log(created_at DESC);
   CREATE INDEX IF NOT EXISTS http_traffic_path ON http_traffic_log(path);
   CREATE INDEX IF NOT EXISTS http_traffic_ip ON http_traffic_log(ip);
+  CREATE TABLE IF NOT EXISTS site_announcements (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    text TEXT NOT NULL DEFAULT '',
+    enabled INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+  );
 `);
+database.prepare(`
+  INSERT OR IGNORE INTO site_announcements (id, text, enabled, updated_at)
+  VALUES (1, '', 0, CURRENT_TIMESTAMP)
+`).run();
+database.prepare(`
+  UPDATE submissions
+  SET verdict = 'ERROR', message = 'Server restarted while evaluating submission.'
+  WHERE verdict IN ('IN_QUEUE', 'RUNNING')
+`).run();
 database.prepare("DELETE FROM auth_sessions WHERE expires_at <= ?").run(Date.now());
 database.prepare("DELETE FROM login_challenges WHERE expires_at <= ?").run(Date.now());
 database.prepare(`
@@ -342,6 +359,49 @@ function unquoteYaml(value) {
 
 function answerNameForInput(name) {
   return name.replace(/\(\d+\)(?=\.in$)/i, "").replace(/\.in$/i, ".ans");
+}
+
+function parseZipArchive(buffer) {
+  let eocdOffset = -1;
+  for (let i = buffer.length - 22; i >= Math.max(0, buffer.length - 65557); i--) {
+    if (buffer.readUInt32LE(i) === 0x06054b50) {
+      eocdOffset = i;
+      break;
+    }
+  }
+  if (eocdOffset === -1) throw new Error("Invalid ZIP archive: End of Central Directory record not found.");
+  const totalEntries = buffer.readUInt16LE(eocdOffset + 10);
+  const cdOffset = buffer.readUInt32LE(eocdOffset + 16);
+  let pos = cdOffset;
+  const entries = new Map();
+  for (let i = 0; i < totalEntries; i++) {
+    if (pos + 46 > buffer.length || buffer.readUInt32LE(pos) !== 0x02014b50) break;
+    const compression = buffer.readUInt16LE(pos + 10);
+    const compressedSize = buffer.readUInt32LE(pos + 20);
+    const uncompressedSize = buffer.readUInt32LE(pos + 24);
+    const nameLen = buffer.readUInt16LE(pos + 28);
+    const extraLen = buffer.readUInt16LE(pos + 30);
+    const commentLen = buffer.readUInt16LE(pos + 32);
+    const localOffset = buffer.readUInt32LE(pos + 42);
+    const name = buffer.toString("utf8", pos + 46, pos + 46 + nameLen).split("\\").join("/");
+    pos += 46 + nameLen + extraLen + commentLen;
+    if (name.endsWith("/")) continue;
+
+    const localNameLen = buffer.readUInt16LE(localOffset + 26);
+    const localExtraLen = buffer.readUInt16LE(localOffset + 28);
+    const dataOffset = localOffset + 30 + localNameLen + localExtraLen;
+    const compressedData = buffer.subarray(dataOffset, dataOffset + compressedSize);
+    let data;
+    if (compression === 0) {
+      data = compressedData;
+    } else if (compression === 8) {
+      data = zlib.inflateRawSync(compressedData);
+    } else {
+      throw new Error(`Unsupported compression method in ZIP: ${compression}`);
+    }
+    entries.set(name, data);
+  }
+  return entries;
 }
 
 function archiveProblemPoints(module, group) {
@@ -1285,31 +1345,49 @@ function getFriendOverview(userId) {
   return { friends, requests: pending };
 }
 
-function persistSubmission(user, problem, language, result) {
+function finalizeSubmission(submissionId, user, problem, language, result) {
   const tests = Array.isArray(result.tests) ? result.tests : [];
   const firstFailure = tests.find((test) => test.verdict !== "AC");
   const verdict = tests.length ? firstFailure?.verdict || "AC" :
     result.error?.toLowerCase().includes("compilation") ? "CE" : "ERROR";
   const elapsedMs = tests.reduce((sum, test) => sum + test.elapsedMs, 0);
+  const total = tests.length || problem.testcaseCount || 0;
+  const message = result.error || (verdict === "AC" ? "All testcases passed." : `${result.passed ?? 0} of ${total} testcases passed.`);
+  const compilerOutput = (result.compilerOutput || "").slice(0, 8000);
   const createdAt = new Date().toISOString();
-  const inserted = database.prepare(`
-    INSERT INTO submissions (user_id, problem_id, language, verdict, passed, total, elapsed_ms, tests_json, message, compiler_output, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(user.id, problem.id, language, verdict, result.passed ?? 0, tests.length || problem.testcaseCount,
-    elapsedMs, JSON.stringify(tests), result.error || "", (result.compilerOutput || "").slice(0, 8000), createdAt);
+
+  let finalId = submissionId;
+  if (submissionId) {
+    database.prepare(`
+      UPDATE submissions
+      SET verdict = ?, passed = ?, total = ?, elapsed_ms = ?, tests_json = ?, message = ?, compiler_output = ?
+      WHERE id = ?
+    `).run(verdict, result.passed ?? 0, total, elapsedMs, JSON.stringify(tests), message, compilerOutput, submissionId);
+  } else {
+    const inserted = database.prepare(`
+      INSERT INTO submissions (user_id, problem_id, language, verdict, passed, total, elapsed_ms, tests_json, message, compiler_output, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(user.id, problem.id, language, verdict, result.passed ?? 0, total, elapsedMs, JSON.stringify(tests), message, compilerOutput, createdAt);
+    finalId = Number(inserted.lastInsertRowid);
+  }
+
   let pointsEarned = 0;
   if (verdict === "AC") {
     const awarded = database.prepare(`
       INSERT OR IGNORE INTO user_problem_points (user_id, problem_id, points, submission_id, awarded_at)
       VALUES (?, ?, ?, ?, ?)
-    `).run(user.id, problem.id, problem.points, Number(inserted.lastInsertRowid), createdAt);
+    `).run(user.id, problem.id, problem.points, finalId, createdAt);
     if (awarded.changes) pointsEarned = problem.points;
     database.prepare(`
       INSERT INTO user_progress (user_id, problem_id, state, updated_at) VALUES (?, ?, 'solved', ?)
       ON CONFLICT(user_id, problem_id) DO UPDATE SET state = 'solved', updated_at = excluded.updated_at
     `).run(user.id, problem.id, createdAt);
   }
-  return { verdict, passed: result.passed ?? 0, total: tests.length || problem.testcaseCount, elapsedMs, tests, message: result.error || "", compilerOutput: (result.compilerOutput || "").slice(0, 8000), pointsEarned, createdAt };
+  return { id: finalId, verdict, passed: result.passed ?? 0, total, elapsedMs, tests, message, compilerOutput, pointsEarned, createdAt };
+}
+
+function persistSubmission(user, problem, language, result) {
+  return finalizeSubmission(null, user, problem, language, result);
 }
 
 function publicThreadSummary(row) {
@@ -1367,6 +1445,8 @@ async function handleUserApi(request, response, url) {
     "/api/account/email",
     "/api/admin/problems",
     "/api/admin/problems/update",
+    "/api/admin/problems/import-zip",
+    "/api/admin/announcement",
     "/api/admin/auth-settings",
     "/api/forum/threads",
   ].includes(pathname) || (isPost && /^\/api\/forum\/threads\/\d+\/replies$/.test(pathname))) ||
@@ -1502,17 +1582,145 @@ async function handleUserApi(request, response, url) {
     return true;
   }
 
+  if (pathname === "/api/announcement" && request.method === "GET") {
+    const annRow = database.prepare("SELECT text, enabled FROM site_announcements WHERE id = 1").get();
+    send(response, 200, JSON.stringify(annRow ? { text: annRow.text, enabled: Boolean(annRow.enabled) } : { text: "", enabled: false }));
+    return true;
+  }
+
+  if (pathname === "/api/submissions/active" && request.method === "GET") {
+    const user = currentUser(request, response);
+    if (!user) {
+      send(response, 200, JSON.stringify({ active: false }));
+      return true;
+    }
+    const row = database.prepare(`
+      SELECT id, problem_id, language, verdict, message, created_at
+      FROM submissions
+      WHERE user_id = ? AND verdict IN ('IN_QUEUE', 'RUNNING')
+      ORDER BY id DESC LIMIT 1
+    `).get(user.id);
+    if (row) {
+      const problem = problems.find((item) => item.id === row.problem_id);
+      send(response, 200, JSON.stringify({
+        active: true,
+        submission: {
+          id: row.id,
+          problemId: row.problem_id,
+          code: problem?.code || row.problem_id,
+          title: problem?.title || row.problem_id,
+          verdict: row.verdict,
+          message: row.message,
+        }
+      }));
+    } else {
+      send(response, 200, JSON.stringify({ active: false }));
+    }
+    return true;
+  }
+
+  if (pathname === "/api/leaderboard" && request.method === "GET") {
+    const viewer = currentUser(request, response);
+    const moduleParam = url.searchParams.get("module") || "all";
+    const friendsOnly = url.searchParams.get("friendsOnly") === "true";
+
+    let friendIds = null;
+    if (friendsOnly && viewer) {
+      const friendRows = database.prepare(`
+        SELECT CASE WHEN requester_id = ? THEN addressee_id ELSE requester_id END AS friend_id
+        FROM friendships
+        WHERE (requester_id = ? OR addressee_id = ?) AND status = 'accepted'
+      `).all(viewer.id, viewer.id, viewer.id);
+      friendIds = new Set(friendRows.map((r) => r.friend_id));
+      friendIds.add(viewer.id);
+    }
+
+    let users = database.prepare(`
+      SELECT u.id, u.username, (u.avatar_mime_type IS NOT NULL) AS has_avatar, u.created_at
+      FROM users u
+      ORDER BY u.created_at ASC
+    `).all();
+
+    if (friendIds) {
+      users = users.filter((u) => friendIds.has(u.id));
+    }
+
+    const pointsRows = database.prepare(`
+      SELECT user_id, problem_id, points FROM user_problem_points
+    `).all();
+
+    const subCountRows = database.prepare(`
+      SELECT user_id, COUNT(*) AS total_submissions, SUM(CASE WHEN verdict = 'AC' THEN 1 ELSE 0 END) AS ac_submissions
+      FROM submissions
+      GROUP BY user_id
+    `).all();
+    const subStats = new Map(subCountRows.map((r) => [r.user_id, r]));
+
+    let problemSet = null;
+    if (moduleParam !== "all") {
+      problemSet = new Set(problems.filter((p) => p.module === moduleParam).map((p) => p.id));
+    }
+
+    const userStats = new Map();
+    for (const u of users) {
+      userStats.set(u.id, {
+        id: u.id,
+        username: u.username,
+        avatarUrl: u.has_avatar ? `/api/users/${u.id}/avatar` : null,
+        totalPoints: 0,
+        solvedCount: 0,
+        totalSubmissions: subStats.get(u.id)?.total_submissions || 0,
+        acSubmissions: subStats.get(u.id)?.ac_submissions || 0,
+      });
+    }
+
+    for (const row of pointsRows) {
+      if (problemSet && !problemSet.has(row.problem_id)) continue;
+      const stats = userStats.get(row.user_id);
+      if (stats) {
+        stats.totalPoints += row.points;
+        stats.solvedCount += 1;
+      }
+    }
+
+    const leaderboard = Array.from(userStats.values())
+      .sort((a, b) => b.totalPoints - a.totalPoints || b.solvedCount - a.solvedCount || a.username.localeCompare(b.username));
+
+    let currentRank = 1;
+    for (let i = 0; i < leaderboard.length; i++) {
+      if (i > 0 && (leaderboard[i].totalPoints < leaderboard[i - 1].totalPoints)) {
+        currentRank = i + 1;
+      }
+      leaderboard[i].rank = currentRank;
+      leaderboard[i].accuracy = leaderboard[i].totalSubmissions > 0
+        ? Math.round((leaderboard[i].acSubmissions / leaderboard[i].totalSubmissions) * 100)
+        : 0;
+    }
+
+    const uniqueModules = Array.from(new Set(problems.map((p) => p.module))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    send(response, 200, JSON.stringify({
+      module: moduleParam,
+      modules: uniqueModules,
+      leaderboard,
+    }));
+    return true;
+  }
+
   if (pathname === "/api/auth/me" && request.method === "GET") {
     const user = currentUser(request, response);
     const authConfig = publicAuthConfig();
+    const annRow = database.prepare("SELECT text, enabled FROM site_announcements WHERE id = 1").get();
+    const announcement = annRow ? { text: annRow.text, enabled: Boolean(annRow.enabled) } : { text: "", enabled: false };
     if (!user) {
-      send(response, 200, JSON.stringify({ user: null, progress: {}, authConfig }));
+      send(response, 200, JSON.stringify({ user: null, progress: {}, authConfig, announcement }));
       return true;
     }
     send(response, 200, JSON.stringify({
       user: { id: user.id, username: user.username, isAdmin: isAdmin(user) },
       progress: userProgressMap(user.id),
       authConfig,
+      announcement,
     }));
     return true;
   }
@@ -1688,13 +1896,15 @@ async function handleUserApi(request, response, url) {
     pathname === "/api/ratings" || pathname === "/api/friends" ||
     pathname === "/api/account/avatar" || pathname === "/api/account/email" ||
     pathname === "/api/admin/problems" || pathname === "/api/admin/problems/update" ||
+    pathname === "/api/admin/problems/import-zip" ||
+    pathname === "/api/admin/announcement" ||
     pathname === "/api/admin/auth-settings" ||
     pathname === "/api/forum/threads" || /^\/api\/forum\/threads\/\d+\/replies$/.test(pathname))) {
     if (request.headers["content-type"]?.split(";")[0].trim() !== "application/json") {
       jsonError(response, 415, "Send request data as application/json.");
       return true;
     }
-    const maxBytes = pathname === "/api/admin/problems" || pathname === "/api/admin/problems/update"
+    const maxBytes = (pathname === "/api/admin/problems" || pathname === "/api/admin/problems/update" || pathname === "/api/admin/problems/import-zip")
       ? MAX_ADMIN_REQUEST_BYTES
       : pathname === "/api/account/avatar"
         ? MAX_AVATAR_REQUEST_BYTES
@@ -2371,6 +2581,123 @@ async function handleUserApi(request, response, url) {
       return true;
     }
 
+    if (pathname === "/api/admin/announcement") {
+      if (!isAdmin(user)) {
+        jsonError(response, 403, "Only the administrator can configure announcements.");
+        return true;
+      }
+      const text = typeof body.text === "string" ? body.text.slice(0, 1000).trim() : "";
+      const enabled = body.enabled ? 1 : 0;
+      database.prepare(`
+        UPDATE site_announcements SET text = ?, enabled = ?, updated_at = ? WHERE id = 1
+      `).run(text, enabled, new Date().toISOString());
+      send(response, 200, JSON.stringify({ ok: true, text, enabled: Boolean(enabled) }));
+      return true;
+    }
+
+    if (pathname === "/api/admin/problems/import-zip") {
+      if (!isAdmin(user)) {
+        jsonError(response, 403, "Only the administrator can import problems.");
+        return true;
+      }
+      if (!body.zipBase64 || typeof body.zipBase64 !== "string") {
+        jsonError(response, 400, "Provide zipBase64 in the request body.");
+        return true;
+      }
+      const cleanBase64 = body.zipBase64.replace(/^data:application\/[^;]+;base64,/, "");
+      const zipBuffer = Buffer.from(cleanBase64, "base64");
+      let zipEntries;
+      try {
+        zipEntries = parseZipArchive(zipBuffer);
+      } catch (err) {
+        jsonError(response, 400, `Could not parse ZIP archive: ${err.message}`);
+        return true;
+      }
+
+      let yamlEntry = null;
+      for (const [name, buf] of zipEntries.entries()) {
+        if (/(?:^|\/)problem\.yaml$/i.test(name)) {
+          yamlEntry = buf.toString("utf8");
+          break;
+        }
+      }
+
+      let statementPdfBuf = null;
+      let statementText = "";
+      for (const [name, buf] of zipEntries.entries()) {
+        if (/(?:^|\/)problem\.pdf$/i.test(name)) {
+          statementPdfBuf = buf;
+          break;
+        }
+      }
+      for (const [name, buf] of zipEntries.entries()) {
+        if (/(?:^|\/)(?:statement\.txt|problem\.md|statement\.md)$/i.test(name)) {
+          statementText = buf.toString("utf8");
+          break;
+        }
+      }
+
+      const testcases = [];
+      const inFiles = [];
+      for (const name of zipEntries.keys()) {
+        if (/\.in$/i.test(name)) inFiles.push(name);
+      }
+      inFiles.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+      for (const inName of inFiles) {
+        const ansName = answerNameForInput(inName);
+        const ansBuf = zipEntries.get(ansName);
+        if (!ansBuf) continue;
+        const inBuf = zipEntries.get(inName);
+        const isSample = /sample/i.test(inName);
+        testcases.push({
+          input: inBuf.toString("utf8"),
+          output: ansBuf.toString("utf8"),
+          sample: isSample,
+        });
+      }
+
+      if (!testcases.length) {
+        jsonError(response, 400, "No matching .in / .ans testcase pairs found in the ZIP archive.");
+        return true;
+      }
+
+      let title = body.title || "";
+      let points = Number(body.points) || 100;
+      if (yamlEntry) {
+        const nameMatch = yamlEntry.match(/^name:\s*(.*?)\s*$/m);
+        if (nameMatch && !title) title = unquoteYaml(nameMatch[1]);
+        const pointsMatch = yamlEntry.match(/^points:\s*(\d+)/m);
+        if (pointsMatch && !body.points) points = Number(pointsMatch[1]);
+      }
+      if (!title) title = body.code || "Imported Problem";
+      const module = (body.module || "Classroom").trim();
+      const group = (body.group || "Imported").trim();
+      const code = (body.code || `ZIP-${Date.now().toString(36).toUpperCase()}`).trim();
+      const id = `classroom/${module}/${code}`;
+
+      const testcasesJson = JSON.stringify(testcases);
+      const now = new Date().toISOString();
+      database.prepare(`
+        INSERT INTO admin_problems (id, module, group_name, code, title, statement, testcases_json, points, statement_pdf, image_mime_type, image_data, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          title = excluded.title, statement = excluded.statement, testcases_json = excluded.testcases_json,
+          points = excluded.points, statement_pdf = excluded.statement_pdf
+      `).run(id, module, group, code, title, statementText || "", testcasesJson, points, statementPdfBuf, now);
+
+      problems = loadProblems().sort((a, b) =>
+        a.module.localeCompare(b.module, undefined, { numeric: true }) ||
+        a.id.localeCompare(b.id, undefined, { numeric: true })
+      );
+
+      send(response, 200, JSON.stringify({
+        ok: true,
+        problem: { id, module, code, title, testcaseCount: testcases.length, points }
+      }));
+      return true;
+    }
+
     if (pathname === "/api/forum/threads") {
       const categories = ["General", "Problem Help", "C Programming", "Study Group"];
       if (!categories.includes(body.category) || !validForumText(body.title, 120) || !validForumText(body.body, 8000)) {
@@ -2710,7 +3037,7 @@ function normalizeOutput(text) {
   return text.trim().split(/\s+/).filter(Boolean).join(" ");
 }
 
-async function judgeSubmission(problem, source, languageId) {
+async function judgeSubmission(problem, source, languageId, onProgress = null) {
   const language = LANGUAGES[languageId];
   if (!language) return { error: "Choose C17, C++17, or Python 3.", tests: [] };
   const workFolder = await fs.promises.mkdtemp(path.join(os.tmpdir(), "praktikum-"));
@@ -2727,6 +3054,7 @@ async function judgeSubmission(problem, source, languageId) {
     let runCommand = "python3";
     let runArgs = ["-I", sourcePath];
     if (language.compileArgs) {
+      if (onProgress) onProgress({ step: "compile", message: "Compiling…" });
       const compilation = await runSandboxCommand(workFolder, language.command, [
         ...language.compileArgs,
         sourcePath,
@@ -2756,6 +3084,7 @@ async function judgeSubmission(problem, source, languageId) {
       runCommand = "/work/solution";
       runArgs = [];
     } else if (languageId === "python") {
+      if (onProgress) onProgress({ step: "syntax", message: "Checking syntax…" });
       const syntaxCheck = await runSandboxCommand(workFolder, "python3", [
         "-I",
         "-c",
@@ -2790,6 +3119,8 @@ async function judgeSubmission(problem, source, languageId) {
     const timeoutMs = Math.max(1000, Math.min(5000, Math.ceil(limitSeconds * 1500 + 500)));
 
     for (let index = 0; index < testCases.length; index += 1) {
+      const currentNum = index + 1;
+      if (onProgress) onProgress({ step: "test", current: currentNum, total: testCases.length, message: `Processing test case ${currentNum} of ${testCases.length}…` });
       const testCase = testCases[index];
       const input = problem.custom || hasStoredTestcases
         ? Buffer.from(testCase.input, "utf8")
@@ -2811,7 +3142,18 @@ async function judgeSubmission(problem, source, languageId) {
       else if (execution.exitCode !== 0) verdict = "RTE";
       else if (normalizeOutput(execution.stdout.toString("utf8")) !== normalizeOutput(expected)) verdict = "WA";
 
-      results.push({ number: index + 1, verdict, elapsedMs: Math.round(elapsedMs) });
+      const isSample = Boolean(testCase.sample || index < (problem.sampleCount || 0));
+      results.push({
+        number: index + 1,
+        verdict,
+        elapsedMs: Math.round(elapsedMs),
+        sample: isSample,
+        ...(isSample ? {
+          input: input.toString("utf8"),
+          expected: typeof expected === "string" ? expected : expected.toString("utf8"),
+          actual: execution.stdout.toString("utf8"),
+        } : {})
+      });
     }
 
     return { language: language.id, languageName: language.name, tests: results, passed: results.filter((result) => result.verdict === "AC").length };
@@ -2828,17 +3170,29 @@ async function drainJudgeQueue() {
       const job = judgeQueue.shift();
       if (job.response.destroyed) continue;
       activeJudgeUserId = job.user.id;
+      activeJudgeSubmissionId = job.submissionId;
       try {
-        const result = await judgeSubmission(job.problem, job.source, job.language);
-        const submission = persistSubmission(job.user, job.problem, job.language, result);
+        database.prepare("UPDATE submissions SET verdict = 'RUNNING', message = 'Compiling…' WHERE id = ?").run(job.submissionId);
+        const result = await judgeSubmission(job.problem, job.source, job.language, (progress) => {
+          try {
+            database.prepare("UPDATE submissions SET verdict = 'RUNNING', message = ? WHERE id = ?")
+              .run(progress.message, job.submissionId);
+          } catch {}
+        });
+        const submission = finalizeSubmission(job.submissionId, job.user, job.problem, job.language, result);
         if (!job.response.destroyed) send(job.response, 200, JSON.stringify({ ...result, submission }));
       } catch (error) {
         console.error("Queued judge request failed:", error);
+        try {
+          database.prepare("UPDATE submissions SET verdict = 'ERROR', message = 'The isolated judge failed unexpectedly.' WHERE id = ?")
+            .run(job.submissionId);
+        } catch {}
         if (!job.response.destroyed && !job.response.headersSent) {
           jsonError(job.response, 500, "The isolated judge failed unexpectedly. Check the server logs.");
         }
       } finally {
         activeJudgeUserId = null;
+        activeJudgeSubmissionId = null;
       }
     }
   } finally {
@@ -2858,8 +3212,204 @@ function enqueueSubmission(user, problem, source, language, response) {
     jsonError(response, 429, "You already have submissions waiting in the judge queue.");
     return;
   }
-  judgeQueue.push({ user, problem, source, language, response });
+  const createdAt = new Date().toISOString();
+  const inserted = database.prepare(`
+    INSERT INTO submissions (user_id, problem_id, language, verdict, passed, total, elapsed_ms, tests_json, message, compiler_output, created_at)
+    VALUES (?, ?, ?, 'IN_QUEUE', 0, ?, 0, '[]', 'In Queue', '', ?)
+  `).run(user.id, problem.id, language, problem.testcaseCount || 0, createdAt);
+  const submissionId = Number(inserted.lastInsertRowid);
+  judgeQueue.push({ submissionId, user, problem, source, language, response });
   void drainJudgeQueue();
+}
+
+async function handlePlaygroundRun(request, response) {
+  const user = currentUser(request, response);
+  if (!user) {
+    jsonError(response, 401, "Log in before testing code.");
+    return;
+  }
+  if (!isSameOriginRequest(request)) {
+    jsonError(response, 403, "Cross-origin code runs are not allowed.");
+    return;
+  }
+  if (request.headers["content-type"]?.split(";")[0].trim() !== "application/json") {
+    jsonError(response, 415, "Send request data as application/json.");
+    return;
+  }
+  let body;
+  try {
+    body = await readJsonBody(request);
+  } catch (error) {
+    jsonError(response, error.statusCode || 400, error.message || "Could not read request body.");
+    return;
+  }
+  if (!body || typeof body !== "object" || typeof body.source !== "string" || typeof body.language !== "string" || !LANGUAGES[body.language]) {
+    jsonError(response, 400, "A supported language and source code are required.");
+    return;
+  }
+  if (Buffer.byteLength(body.source, "utf8") > MAX_SOURCE_BYTES) {
+    jsonError(response, 413, "Source code must be 128 KB or smaller.");
+    return;
+  }
+
+  const language = LANGUAGES[body.language];
+  const workFolder = await fs.promises.mkdtemp(path.join(os.tmpdir(), "praktikum-pg-"));
+  try {
+    await fs.promises.chmod(workFolder, 0o777);
+    const sourceFileName = `solution${language.extension}`;
+    const sourcePath = `/work/${sourceFileName}`;
+    const hostSourcePath = path.join(workFolder, sourceFileName);
+    const executablePath = path.join(workFolder, "solution");
+    await fs.promises.writeFile(hostSourcePath, body.source, "utf8");
+    await fs.promises.chmod(hostSourcePath, 0o644);
+
+    let runCommand = "python3";
+    let runArgs = ["-I", sourcePath];
+    if (language.compileArgs) {
+      const compilation = await runSandboxCommand(workFolder, language.command, [
+        ...language.compileArgs,
+        sourcePath,
+        ...(language.id === "c" ? ["-lm"] : []),
+        "-o",
+        "/work/solution",
+      ], {
+        timeoutMs: COMPILER_TIMEOUT_MS,
+        maxOutputBytes: MAX_COMPILER_OUTPUT_BYTES,
+        writable: true,
+      });
+
+      if (compilation.spawnError) {
+        send(response, 200, JSON.stringify({ ok: false, error: compilation.spawnError }));
+        return;
+      }
+      if (compilation.stopReason || compilation.exitCode !== 0) {
+        send(response, 200, JSON.stringify({
+          ok: false,
+          status: "CE",
+          compilerOutput: compilation.stderr.toString("utf8") || "Compilation failed."
+        }));
+        return;
+      }
+      await fs.promises.chmod(workFolder, 0o755);
+      runCommand = "/work/solution";
+      runArgs = [];
+    } else if (language.id === "python") {
+      const syntaxCheck = await runSandboxCommand(workFolder, "python3", [
+        "-I",
+        "-c",
+        "import ast, pathlib, sys; ast.parse(pathlib.Path(sys.argv[1]).read_text())",
+        sourcePath,
+      ], { timeoutMs: COMPILER_TIMEOUT_MS, maxOutputBytes: MAX_COMPILER_OUTPUT_BYTES });
+      if (syntaxCheck.stopReason || syntaxCheck.exitCode !== 0) {
+        send(response, 200, JSON.stringify({
+          ok: false,
+          status: "CE",
+          compilerOutput: syntaxCheck.stderr.toString("utf8") || "Syntax error in Python code."
+        }));
+        return;
+      }
+    }
+
+    if (body.runSamples && body.problemId) {
+      const problem = problems.find((p) => p.id === body.problemId);
+      if (!problem) {
+        jsonError(response, 404, "Problem not found.");
+        return;
+      }
+      let samples = [];
+      if (problem.custom) {
+        const stored = database.prepare("SELECT testcases_json FROM admin_problems WHERE id = ?").get(problem.id);
+        if (stored?.testcases_json) {
+          samples = JSON.parse(stored.testcases_json).filter((tc) => tc.sample).map((tc) => ({ input: tc.input, output: tc.output }));
+        }
+      } else if (problem.testcaseOverride) {
+        const override = database.prepare("SELECT testcases_json FROM problem_overrides WHERE problem_id = ?").get(problem.id);
+        if (override?.testcases_json) {
+          samples = JSON.parse(override.testcases_json).filter((tc) => tc.sample).map((tc) => ({ input: tc.input, output: tc.output }));
+        }
+      } else {
+        const sampleFolder = path.join(testcaseFolderForProblem(problem), "data", "sample");
+        if (fs.existsSync(sampleFolder)) {
+          const files = fs.readdirSync(sampleFolder).filter((f) => /\.in$/i.test(f)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+          for (const f of files) {
+            const ansName = answerNameForInput(f);
+            const inPath = path.join(sampleFolder, f);
+            const ansPath = path.join(sampleFolder, ansName);
+            if (fs.existsSync(ansPath)) {
+              samples.push({
+                input: fs.readFileSync(inPath, "utf8"),
+                output: fs.readFileSync(ansPath, "utf8"),
+              });
+            }
+          }
+        }
+      }
+
+      if (!samples.length) {
+        send(response, 200, JSON.stringify({ ok: false, error: "No public sample cases found for this problem." }));
+        return;
+      }
+
+      const sampleResults = [];
+      for (let i = 0; i < Math.min(samples.length, 5); i++) {
+        const sample = samples[i];
+        const startedAt = process.hrtime.bigint();
+        const execution = await runSandboxCommand(workFolder, runCommand, runArgs, {
+          cwd: workFolder,
+          input: Buffer.from(sample.input, "utf8"),
+          timeoutMs: 3000,
+          maxOutputBytes: MAX_OUTPUT_BYTES,
+        });
+        const elapsedMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+        const actual = execution.stdout.toString("utf8");
+        const stderr = execution.stderr.toString("utf8");
+        let verdict = "AC";
+        if (execution.spawnError || execution.exitCode !== 0) verdict = "RTE";
+        else if (execution.stopReason) verdict = execution.stopReason === "TIME LIMIT EXCEEDED" ? "TLE" : "OLE";
+        else if (normalizeOutput(actual) !== normalizeOutput(sample.output)) verdict = "WA";
+
+        sampleResults.push({
+          number: i + 1,
+          input: sample.input,
+          expected: sample.output,
+          actual,
+          stderr,
+          verdict,
+          elapsedMs: Math.round(elapsedMs),
+        });
+      }
+
+      send(response, 200, JSON.stringify({
+        ok: true,
+        type: "samples",
+        results: sampleResults,
+        allPassed: sampleResults.every((r) => r.verdict === "AC"),
+      }));
+      return;
+    }
+
+    const customInput = typeof body.input === "string" ? body.input.slice(0, 64 * 1024) : "";
+    const startedAt = process.hrtime.bigint();
+    const execution = await runSandboxCommand(workFolder, runCommand, runArgs, {
+      cwd: workFolder,
+      input: Buffer.from(customInput, "utf8"),
+      timeoutMs: 3000,
+      maxOutputBytes: MAX_OUTPUT_BYTES,
+    });
+    const elapsedMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+
+    send(response, 200, JSON.stringify({
+      ok: true,
+      type: "custom",
+      stdout: execution.stdout.toString("utf8"),
+      stderr: execution.stderr.toString("utf8"),
+      exitCode: execution.exitCode,
+      stopReason: execution.stopReason || null,
+      elapsedMs: Math.round(elapsedMs),
+    }));
+  } finally {
+    await fs.promises.rm(workFolder, { recursive: true, force: true });
+  }
 }
 
 function isSameOriginRequest(request) {
@@ -2949,7 +3499,11 @@ const server = http.createServer(async (request, response) => {
       return;
     }
     if (response.writableEnded) return;
-    if (url.pathname === "/api/run" && request.method === "POST") {
+    if (url.pathname === "/api/playground/run" && request.method === "POST") {
+      await handlePlaygroundRun(request, response);
+      return;
+    }
+    if ((url.pathname === "/api/run" || url.pathname === "/api/submissions") && request.method === "POST") {
         const user = currentUser(request, response);
         if (!user) {
           jsonError(response, 401, "Create an account or log in before submitting code.");

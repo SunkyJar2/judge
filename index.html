@@ -37,7 +37,8 @@
           <a class="nav-link active" href="#problems" data-page-link="problems"><img class="ui-icon" src="/assets/icons/vista_book_1.ico" alt=""><span>PROBLEMS</span></a>
           <a class="nav-link" href="#submit" data-page-link="submit"><img class="ui-icon" src="/assets/icons/vista_console.ico" alt=""><span>SUBMIT CODE</span></a>
           <a class="nav-link" href="#status" data-page-link="status"><img class="ui-icon" src="/assets/icons/vista_info.ico" alt=""><span>STATUS</span></a>
-          <a class="nav-link" href="#progress" data-page-link="progress"><img class="ui-icon" src="/assets/icons/vista_perf_center.ico" alt=""><span>MY PROGRESS</span></a>
+          <a class="nav-link" href="#standings" data-page-link="standings"><img class="ui-icon" src="/assets/icons/vista_perf_center.ico" alt=""><span>STANDINGS</span></a>
+          <a class="nav-link" href="#progress" data-page-link="progress"><img class="ui-icon" src="/assets/icons/vista_collab.ico" alt=""><span>MY PROGRESS</span></a>
           <a class="nav-link" href="#forum" data-page-link="forum"><img class="ui-icon" src="/assets/icons/vista_messenger.ico" alt=""><span>FORUM</span></a>
           <a class="nav-link hidden" id="admin-nav-link" href="#admin" data-page-link="admin"><img class="ui-icon" src="/assets/icons/vista_personalization.ico" alt=""><span>ADMIN</span></a>
         </div>
@@ -45,6 +46,13 @@
     </header>
 
     <main class="site-main">
+      <div id="site-announcement-banner" class="announcement-banner hidden" role="alert">
+        <div class="announcement-content">
+          <span class="announcement-badge">ANNOUNCEMENT</span>
+          <span id="announcement-message" class="announcement-message"></span>
+        </div>
+        <button type="button" id="dismiss-announcement-btn" class="announcement-close" aria-label="Dismiss announcement">✕</button>
+      </div>
       <section class="page" id="page-problems" data-page="problems">
         <div class="page-heading">
           <div><div class="breadcrumbs">HOME <span>›</span> PROBLEMS</div><h1>Problemset</h1></div>
@@ -108,11 +116,37 @@
             <div id="selected-problem-info" class="selected-problem-info" aria-live="polite">Type a problem code to find a judgeable problem.</div>
             <label class="field-label" for="submission-language">LANGUAGE</label>
             <select id="submission-language" class="form-control"><option value="c">GNU C17</option><option value="cpp">GNU C++17</option><option value="python">Python 3</option></select>
-            <label class="field-label editor-label" for="source-editor">SOURCE CODE <span id="language-hint">GCC · C17</span></label>
-            <textarea id="source-editor" class="code-editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Source code"></textarea>
+            <div class="editor-header-bar">
+              <label class="field-label editor-label" for="source-editor">SOURCE CODE <span id="language-hint">GCC · C17</span></label>
+              <div class="editor-tools">
+                <input type="file" id="source-file-input" accept=".c,.h,.cpp,.cc,.cxx,.hpp,.py,.txt" class="hidden">
+                <button type="button" id="upload-file-btn" class="editor-tool-btn" title="Load source file (.c, .cpp, .py) into editor"><img class="ui-icon" src="/assets/icons/vista_pc_1.ico" alt=""> UPLOAD CODE FILE</button>
+              </div>
+            </div>
+            <div class="code-editor-wrapper">
+              <div id="editor-gutter" class="editor-gutter" aria-hidden="true">1</div>
+              <textarea id="source-editor" class="code-editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Source code"></textarea>
+            </div>
             <div class="editor-actions">
               <span class="security-note">Submissions run in an isolated server sandbox.</span>
-              <button id="submit-code" class="submit-button" disabled>SUBMIT &amp; RUN</button>
+              <div class="editor-action-buttons">
+                <button type="button" id="toggle-test-btn" class="plain-button editor-test-btn"><img class="ui-icon" src="/assets/icons/vista_console.ico" alt=""> RUN TEST</button>
+                <button id="submit-code" class="submit-button" disabled>SUBMIT &amp; RUN</button>
+              </div>
+            </div>
+            <div id="playground-panel" class="playground-panel hidden">
+              <div class="playground-header">
+                <div class="playground-tabs">
+                  <button type="button" id="pg-tab-samples" class="pg-tab active">Run Sample Cases</button>
+                  <button type="button" id="pg-tab-custom" class="pg-tab">Custom Input</button>
+                </div>
+                <button type="button" id="pg-run-btn" class="plain-button pg-run-action">EXECUTE TEST</button>
+              </div>
+              <div id="pg-custom-input-box" class="pg-input-box hidden">
+                <label class="field-label" for="pg-custom-stdin">CUSTOM STANDARD INPUT (STDIN)</label>
+                <textarea id="pg-custom-stdin" class="form-control pg-textarea" rows="3" placeholder="Enter custom standard input for your program…"></textarea>
+              </div>
+              <div id="pg-result-box" class="pg-result-box hidden"></div>
             </div>
             <div id="submission-result" class="submission-result hidden" aria-live="polite"></div>
           </section>
@@ -147,6 +181,48 @@
           <table class="data-table">
             <thead><tr><th>WHEN</th><th>PROBLEM</th><th>VERDICT</th><th>TESTS</th><th>LANGUAGE</th><th>TIME</th></tr></thead>
             <tbody id="submission-list"><tr><td colspan="6" class="table-placeholder">Log in to view your submission history.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="page hidden" id="page-standings" data-page="standings">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> STANDINGS</div><h1>Leaderboard &amp; Standings</h1></div>
+          <span class="subheading" id="standings-user-count">0 CODERS</span>
+        </div>
+        <div class="notice-bar"><strong>SCOREBOARD</strong><span>Live student rankings, solved problem counts, points, and solution accuracy.</span></div>
+        <div class="filter-bar standings-filter-bar">
+          <div class="filter-group">
+            <label class="field-label" for="standings-module-select">COLLECTION</label>
+            <select id="standings-module-select" class="form-control">
+              <option value="all">All Problems</option>
+            </select>
+          </div>
+          <div class="filter-group filter-grow">
+            <label class="field-label" for="standings-search-input">SEARCH CODER</label>
+            <input id="standings-search-input" class="form-control" type="text" placeholder="Filter by username…">
+          </div>
+          <div class="filter-group standings-friends-group">
+            <label class="checkbox-label" for="standings-friends-toggle">
+              <input type="checkbox" id="standings-friends-toggle"> Friends Only
+            </label>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table standings-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>CODER</th>
+                <th style="width: 100px;">SOLVED</th>
+                <th style="width: 110px;">POINTS</th>
+                <th style="width: 120px;">SUBMISSIONS</th>
+                <th style="width: 110px;">ACCURACY</th>
+              </tr>
+            </thead>
+            <tbody id="standings-table-body">
+              <tr><td colspan="6" class="table-placeholder">Loading standings…</td></tr>
+            </tbody>
           </table>
         </div>
       </section>
@@ -331,6 +407,36 @@
           <label class="checkbox-row"><input type="checkbox" id="admin-firebase-email-link"><span>Allow Firebase passwordless email links if SMTP is not configured (requires Email Link enabled in Firebase Console)</span></label>
           <div id="admin-auth-error" class="account-form-error" aria-live="polite"></div>
           <button type="submit" class="submit-button" id="admin-auth-submit">SAVE AUTH SETTINGS</button>
+        </form>
+
+        <form id="admin-announcement-form" class="submit-form admin-form hidden">
+          <h2>Broadcast announcement banner</h2>
+          <p class="admin-help">Display a prominent banner across all pages for deadlines, announcements, or notifications.</p>
+          <label class="checkbox-row"><input type="checkbox" id="admin-announcement-enabled"><span>Display announcement banner across the site</span></label>
+          <label class="field-label" for="admin-announcement-text" style="margin-top: 10px;">ANNOUNCEMENT TEXT</label>
+          <textarea id="admin-announcement-text" class="form-control" rows="3" maxlength="1000" placeholder="e.g. Modul 3 submission deadline is Friday 23:59 WIB. Lab assistance available."></textarea>
+          <div id="admin-announcement-error" class="account-form-error" aria-live="polite"></div>
+          <button type="submit" class="submit-button" id="admin-announcement-submit">SAVE ANNOUNCEMENT</button>
+        </form>
+
+        <form id="admin-zip-form" class="submit-form admin-form hidden">
+          <h2>Import problem from .ZIP archive</h2>
+          <p class="admin-help">Upload a standard problem zip containing <code>problem.yaml</code>, <code>problem.pdf</code> (or text statement), and <code>data/sample</code> / <code>data/secret</code> testcase files.</p>
+          <div class="zip-dropzone" id="admin-zip-dropzone">
+            <img class="ui-icon" src="/assets/icons/vista_book_1.ico" alt="">
+            <p>Drag &amp; drop a problem <strong>.zip</strong> archive here, or click to browse</p>
+            <input type="file" id="admin-zip-input" accept=".zip" class="hidden">
+            <button type="button" id="admin-zip-browse-btn" class="plain-button">CHOOSE ZIP FILE</button>
+            <div id="admin-zip-file-info" class="zip-file-info hidden"></div>
+          </div>
+          <div class="admin-problem-fields" style="margin-top: 12px;">
+            <label class="admin-field"><span class="field-label">COLLECTION / MODULE <span>OPTIONAL OVERRIDE</span></span><input class="form-control" id="admin-zip-module" maxlength="40" placeholder="e.g. Modul 5 or Classroom"></label>
+            <label class="admin-field"><span class="field-label">GROUP <span>OPTIONAL OVERRIDE</span></span><input class="form-control" id="admin-zip-group" maxlength="40" placeholder="e.g. Set A or Practice"></label>
+            <label class="admin-field"><span class="field-label">PROBLEM CODE <span>OPTIONAL OVERRIDE</span></span><input class="form-control" id="admin-zip-code" maxlength="20" placeholder="e.g. SetA1 or prob-aku"></label>
+            <label class="admin-field"><span class="field-label">POINTS (50 TO 1000)</span><input class="form-control" id="admin-zip-points" type="number" min="50" max="1000" step="1" value="100"></label>
+          </div>
+          <div id="admin-zip-error" class="account-form-error" aria-live="polite"></div>
+          <button type="submit" class="submit-button" id="admin-zip-submit" disabled>IMPORT &amp; PUBLISH PROBLEM</button>
         </form>
       </section>
 
