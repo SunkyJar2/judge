@@ -1,0 +1,14 @@
+{
+  "name": "untitled-judge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Self-hosted online judge for C17, C++17 and Python 3 with sandboxed grading, accounts, forum and progress tracking.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build:sandbox": "podman build -t untitled-judge-sandbox:latest judge-sandbox"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

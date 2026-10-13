@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#dcefe7">
+    <meta name="description" content="Untitled Judge classroom programming problems, judging, accounts and discussion.">
+    <title>Untitled Judge Web - classroom programming</title>
+    <script>
+      try {
+        const savedTheme = localStorage.getItem("untitled-judge-theme");
+        document.documentElement.dataset.theme = savedTheme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      } catch {
+        document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+    </script>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="site-logo" href="#problems" aria-label="Untitled Judge Web home">UNTITLED JUDGE WEB</a>
+        <span class="contest-name">PROBLEMSET ARCHIVE</span>
+        <div class="user-controls">
+          <span id="account-status"><span class="online-dot"></span> GUEST</span>
+          <button class="plain-button account-link" id="open-login" aria-label="Log in"><img class="ui-icon" src="/assets/icons/vista_collab.ico" alt=""><span>LOG IN</span></button>
+          <button class="plain-button account-link" id="open-register" aria-label="Create account"><img class="ui-icon" src="/assets/icons/vista_get_started.ico" alt=""><span>CREATE ACCOUNT</span></button>
+          <a class="plain-button account-link hidden" id="account-button" href="#account" aria-label="My account"><img class="ui-icon" src="/assets/icons/vista_collab.ico" alt=""><span>ACCOUNT</span></a>
+          <button class="plain-button account-link hidden" id="admin-button" type="button" aria-label="Administrator tools"><img class="ui-icon" src="/assets/icons/vista_personalization.ico" alt=""><span>ADMIN</span></button>
+          <button class="plain-button account-link hidden" id="logout-button" aria-label="Log out"><img class="ui-icon" src="/assets/icons/vista_pc_1.ico" alt=""><span>LOG OUT</span></button>
+          <button class="plain-button theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode" title="Switch to dark mode"><span class="theme-glyph" aria-hidden="true">☾</span></button>
+        </div>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <div class="nav-inner">
+          <a class="nav-link active" href="#problems" data-page-link="problems"><img class="ui-icon" src="/assets/icons/vista_book_1.ico" alt=""><span>PROBLEMS</span></a>
+          <a class="nav-link" href="#submit" data-page-link="submit"><img class="ui-icon" src="/assets/icons/vista_console.ico" alt=""><span>SUBMIT CODE</span></a>
+          <a class="nav-link" href="#status" data-page-link="status"><img class="ui-icon" src="/assets/icons/vista_info.ico" alt=""><span>STATUS</span></a>
+          <a class="nav-link" href="#progress" data-page-link="progress"><img class="ui-icon" src="/assets/icons/vista_perf_center.ico" alt=""><span>MY PROGRESS</span></a>
+          <a class="nav-link" href="#forum" data-page-link="forum"><img class="ui-icon" src="/assets/icons/vista_messenger.ico" alt=""><span>FORUM</span></a>
+          <a class="nav-link hidden" id="admin-nav-link" href="#admin" data-page-link="admin"><img class="ui-icon" src="/assets/icons/vista_personalization.ico" alt=""><span>ADMIN</span></a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="site-main">
+      <section class="page" id="page-problems" data-page="problems">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> PROBLEMS</div><h1>Problemset</h1></div>
+          <div class="archive-total">PROBLEMS IN ARCHIVE <strong id="stat-total">--</strong></div>
+        </div>
+        <div class="notice-bar"><strong>CLASSROOM PROBLEMSET</strong><span>Browse course problems, submit solutions, and track your progress.</span></div>
+
+        <div class="problem-layout">
+          <aside class="sidebar">
+            <section class="sidebar-box">
+              <h2>PROBLEMSET</h2>
+              <label class="field-label" for="module-filter">COLLECTION</label>
+              <select class="form-control" id="module-filter"><option value="all">All collections</option></select>
+              <label class="field-label" for="search-input">SEARCH</label>
+              <input class="form-control" id="search-input" type="search" placeholder="Name or problem code">
+              <button class="plain-button" id="clear-filters">CLEAR FILTERS</button>
+            </section>
+            <section class="sidebar-box">
+              <h2>MY PROGRESS</h2>
+              <button class="progress-filter active" data-progress="all"><span>All problems</span><strong id="count-all">0</strong></button>
+              <button class="progress-filter" data-progress="todo"><span>On my list</span><strong id="count-todo">0</strong></button>
+              <button class="progress-filter" data-progress="solved"><span>Solved</span><strong id="count-solved">0</strong></button>
+            </section>
+            <section class="sidebar-box sidebar-statistics">
+              <h2>ARCHIVE INFO</h2>
+              <p>Collections <strong id="stat-modules">--</strong></p>
+              <p>Statements <strong id="stat-statements">--</strong></p>
+              <p>Testcases <strong id="stat-tests">--</strong></p>
+            </section>
+          </aside>
+
+          <section class="content-column" aria-label="Problem list">
+            <div class="content-toolbar">
+              <div><h2>All problems</h2><span class="subheading" id="result-count">LOADING…</span></div>
+              <label class="sort-control">SORT
+                <select id="sort-filter" aria-label="Sort problems">
+                  <option value="module">Collection order</option>
+                  <option value="title">Name A-Z</option>
+                  <option value="code">Problem code</option>
+                </select>
+              </label>
+            </div>
+            <div id="problem-list"><div class="loading-state">Loading problem archive…</div></div>
+            <div class="empty-state hidden" id="empty-state">No problems match these filters. <button id="empty-reset">Clear filters</button></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page hidden" id="page-submit" data-page="submit">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> SUBMIT CODE</div><h1>Submit solution</h1></div>
+        </div>
+        <div class="notice-bar"><strong>LOCAL JUDGE</strong><span>Your C, C++, or Python solution is checked against the selected problem's testcase files.</span></div>
+        <div class="submit-layout">
+          <section class="submit-form">
+            <div class="section-title">NEW SUBMISSION</div>
+            <label class="field-label" for="submission-problem-code">PROBLEM CODE</label>
+            <input id="submission-problem-code" class="form-control" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-autocomplete="list" aria-controls="problem-code-suggestions" aria-expanded="false" placeholder="Type a problem code, for example p1sA1">
+            <div id="problem-code-suggestions" class="problem-code-suggestions hidden" role="listbox" aria-label="Matching judgeable problems"></div>
+            <select id="submission-problem" class="hidden" aria-hidden="true" tabindex="-1"><option value="">Select a problem</option></select>
+            <div id="selected-problem-info" class="selected-problem-info" aria-live="polite">Type a problem code to find a judgeable problem.</div>
+            <label class="field-label" for="submission-language">LANGUAGE</label>
+            <select id="submission-language" class="form-control"><option value="c">GNU C17</option><option value="cpp">GNU C++17</option><option value="python">Python 3</option></select>
+            <label class="field-label editor-label" for="source-editor">SOURCE CODE <span id="language-hint">GCC · C17</span></label>
+            <textarea id="source-editor" class="code-editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Source code"></textarea>
+            <div class="editor-actions">
+              <span class="security-note">Submissions run in an isolated server sandbox.</span>
+              <button id="submit-code" class="submit-button" disabled>SUBMIT &amp; RUN</button>
+            </div>
+            <div id="submission-result" class="submission-result hidden" aria-live="polite"></div>
+          </section>
+          <aside class="submit-aside">
+            <section class="sidebar-box">
+              <h2>HOW TO SUBMIT</h2>
+              <ol class="submit-steps">
+                <li>Type a problem code and choose a matching problem.</li>
+                <li>Paste your C, C++, or Python solution in the editor.</li>
+                <li>Press <strong>Submit &amp; Run</strong>.</li>
+                <li>Check the verdict in the status page.</li>
+              </ol>
+            </section>
+            <section class="sidebar-box">
+              <h2>JUDGE DETAILS</h2>
+              <p>All paired input/answer files are tested, including secret tests.</p>
+              <p>Only your verdict and testcase results are shown. Hidden test data stays private.</p>
+              <p>Expected output is compared while ignoring whitespace between tokens.</p>
+              <p class="security-warning">This local judge is not a security sandbox. Never expose it to public users.</p>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section class="page hidden" id="page-status" data-page="status">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> STATUS</div><h1>Submission status</h1></div>
+          <span class="subheading">LATEST 100 SUBMISSIONS</span>
+        </div>
+        <div class="notice-bar"><strong>SUBMISSION HISTORY</strong><span>Your submission history is stored in your judge account.</span></div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>WHEN</th><th>PROBLEM</th><th>VERDICT</th><th>TESTS</th><th>LANGUAGE</th><th>TIME</th></tr></thead>
+            <tbody id="submission-list"><tr><td colspan="6" class="table-placeholder">Log in to view your submission history.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="page hidden" id="page-progress" data-page="progress">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> MY PROGRESS</div><h1>My progress</h1></div>
+          <div class="archive-total">SOLVED <strong id="progress-solved-total">0</strong> / <span id="progress-all-total">0</span></div>
+        </div>
+        <div class="notice-bar"><strong>YOUR PRACTICE</strong><span>Log in to sync your solved problems and practice list across this local account.</span></div>
+        <div class="progress-summary">
+          <div><span>SOLVED</span><strong id="progress-solved">0</strong></div>
+          <div><span>ON MY LIST</span><strong id="progress-todo">0</strong></div>
+          <div><span>SUBMISSIONS</span><strong id="progress-submissions">0</strong></div>
+        </div>
+        <div id="progress-list"></div>
+      </section>
+
+      <section class="page hidden" id="page-account" data-page="account">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> ACCOUNT</div><h1>My account</h1></div>
+        </div>
+        <div class="notice-bar"><strong>ACCOUNT DETAILS</strong><span>Your activity and profile for this classroom judge.</span></div>
+        <div id="account-details" class="account-details"><p class="table-placeholder">Loading account information...</p></div>
+      </section>
+
+      <section class="page hidden" id="page-user" data-page="user">
+        <div id="user-profile"><p class="loading-state">Loading user profile...</p></div>
+      </section>
+
+      <section class="page hidden" id="page-admin" data-page="admin">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> ADMIN</div><h1>Administrator tools</h1></div>
+        </div>
+        <div class="notice-bar"><strong>PROBLEMSET MANAGER</strong><span>Publish a problem into a collection and manage inappropriate forum posts.</span></div>
+        <form id="admin-problem-form" class="submit-form admin-form">
+          <h2>Add a problem</h2>
+          <div class="admin-problem-fields">
+            <label class="admin-field"><span class="field-label">COLLECTION</span><input class="form-control" id="admin-problem-module" maxlength="40" required placeholder="For example, Module 5"></label>
+            <label class="admin-field"><span class="field-label">PROBLEM CODE</span><input class="form-control" id="admin-problem-code" maxlength="20" required placeholder="A"></label>
+            <label class="admin-field"><span class="field-label">POINTS (50 TO 1000)</span><input class="form-control" id="admin-problem-points" type="number" min="50" max="1000" step="1" value="100" required></label>
+            <label class="admin-field admin-field-wide"><span class="field-label">TITLE</span><input class="form-control" id="admin-problem-title" maxlength="120" required></label>
+          </div>
+            <label class="field-label" for="admin-problem-pdf">STATEMENT PDF <span>OPTIONAL, UP TO 8 MB</span></label>
+            <input class="form-control image-picker" id="admin-problem-pdf" type="file" accept="application/pdf,.pdf">
+            <label class="field-label" for="admin-problem-image">PROBLEM IMAGE <span>OPTIONAL, UP TO 1 MB</span></label>
+            <input class="form-control image-picker" id="admin-problem-image" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
+            <label class="field-label" for="admin-problem-statement">TEXT PROBLEM STATEMENT <span>OPTIONAL IF A PDF IS UPLOADED</span></label>
+            <textarea id="admin-problem-statement" class="form-control admin-statement" maxlength="20000"></textarea>
+          <label class="field-label" for="admin-problem-testcases">TESTCASES (JSON)</label>
+          <textarea id="admin-problem-testcases" class="form-control admin-testcases" spellcheck="false" required>[{"input":"1\n","output":"1\n","sample":true}]</textarea>
+          <p class="admin-help">Add a text statement or a PDF. PDF and image uploads are optional; the image appears with the statement. Use a JSON array of input/output pairs. Set sample to true only for examples students may see. Up to 100 cases; each input/output is limited to 256 KB. Points are awarded once for the first accepted submission.</p>
+          <div id="admin-problem-error" class="account-form-error" aria-live="polite"></div>
+          <button type="submit" class="submit-button" id="admin-problem-submit">PUBLISH PROBLEM</button>
+        </form>
+        <form id="admin-edit-form" class="submit-form admin-form hidden">
+          <h2>Edit a problem</h2>
+          <label class="field-label" for="admin-edit-select">PROBLEM</label>
+          <select id="admin-edit-select" class="form-control">
+            <option value="">Loading problems…</option>
+          </select>
+          <div id="admin-edit-fields" class="hidden">
+            <div class="admin-problem-fields">
+              <label class="admin-field"><span class="field-label">COLLECTION</span><input class="form-control" id="admin-edit-module" maxlength="40" required></label>
+              <label class="admin-field"><span class="field-label">GROUP</span><input class="form-control" id="admin-edit-group" maxlength="40" required></label>
+              <label class="admin-field"><span class="field-label">PROBLEM CODE</span><input class="form-control" id="admin-edit-code" maxlength="20" required></label>
+              <label class="admin-field"><span class="field-label">POINTS (0 TO 1000)</span><input class="form-control" id="admin-edit-points" type="number" min="0" max="1000" step="1" required></label>
+              <label class="admin-field admin-field-wide"><span class="field-label">TITLE</span><input class="form-control" id="admin-edit-title" maxlength="120" required></label>
+            </div>
+            <label class="field-label" for="admin-edit-statement">TEXT STATEMENT <span>LEAVE BLANK TO USE THE EXISTING PDF</span></label>
+            <textarea id="admin-edit-statement" class="form-control admin-statement" maxlength="20000"></textarea>
+            <label class="field-label" for="admin-edit-testcases">TESTCASES (JSON) <span>INPUT, ANSWER, OPTIONAL SAMPLE FLAG</span></label>
+            <textarea id="admin-edit-testcases" class="form-control admin-testcases" spellcheck="false" required></textarea>
+            <p class="admin-help">Editing replaces the test set used by the judge. Mark only public examples with "sample": true. Up to 100 pairs, 256 KB per input and answer. PDF and uploaded problem image assets are preserved. Existing accepted points are unchanged.</p>
+            <div id="admin-edit-error" class="account-form-error" aria-live="polite"></div>
+            <div class="admin-edit-actions">
+              <button type="submit" class="submit-button" id="admin-edit-submit">SAVE PROBLEM</button>
+              <a class="plain-button" id="admin-edit-view" href="#problems">VIEW PROBLEM</a>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="page hidden" id="page-forum" data-page="forum">
+        <div class="page-heading">
+          <div><div class="breadcrumbs">HOME <span>›</span> FORUM</div><h1>Community forum</h1></div>
+          <a class="submit-button" id="new-topic-button" href="#forum/new"><img class="ui-icon" src="/assets/icons/vista_messenger.ico" alt=""><span>NEW TOPIC</span></a>
+        </div>
+        <div class="notice-bar"><strong>STUDY TOGETHER</strong><span>Ask a question, share a hint, or find a partner for the next problem.</span></div>
+        <div class="forum-toolbar"><label for="forum-category">CATEGORY</label><select id="forum-category" class="form-control"><option value="all">All discussions</option><option>General</option><option>Problem Help</option><option>C Programming</option><option>Study Group</option></select></div>
+        <div id="forum-list" class="forum-list"><p class="table-placeholder">Loading forum topics…</p></div>
+      </section>
+
+      <section class="page hidden" id="page-forum-new" data-page="forum-new">
+        <div class="page-heading">
+          <div><div class="breadcrumbs"><a href="#forum">HOME</a> <span>›</span> FORUM <span>›</span> NEW TOPIC</div><h1>Start a discussion</h1></div>
+          <a class="plain-button" href="#forum">BACK TO FORUM</a>
+        </div>
+        <div class="notice-bar"><strong>NEW DISCUSSION</strong><span>Post a question, hint, or study-group invitation for the class.</span></div>
+        <div class="inline-notice hidden" id="forum-login-note">Log in or create an account to publish your discussion.</div>
+        <form id="forum-form" class="submit-form forum-compose">
+          <label class="field-label" for="forum-topic-title">TOPIC TITLE</label>
+          <input class="form-control" id="forum-topic-title" maxlength="120" required>
+          <label class="field-label" for="forum-topic-category">CATEGORY</label>
+          <select id="forum-topic-category" class="form-control"><option>General</option><option>Problem Help</option><option>C Programming</option><option>Study Group</option></select>
+          <label class="field-label" for="forum-topic-body">MESSAGE</label>
+          <textarea id="forum-topic-body" class="form-control forum-textarea" rows="9" maxlength="8000" required></textarea>
+          <label class="field-label" for="forum-topic-images">IMAGE ATTACHMENTS <span>UP TO 3 · 1 MB EACH</span></label>
+          <input class="form-control image-picker" id="forum-topic-images" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
+          <div id="forum-topic-image-list" class="image-selection-note">PNG, JPEG, GIF, or WebP. Images are visible to anyone who can read this forum.</div>
+          <div class="account-form-error" id="forum-form-error" aria-live="polite"></div>
+          <div class="forum-form-actions"><button type="submit" class="submit-button" id="forum-submit">POST TOPIC</button><a class="plain-button" href="#forum">CANCEL</a></div>
+        </form>
+      </section>
+
+      <section class="page hidden" id="page-forum-thread" data-page="forum-thread">
+        <div id="thread-detail"><div class="loading-state">Loading discussion…</div></div>
+      </section>
+
+      <section class="page hidden" id="page-problem" data-page="problem">
+        <div id="problem-detail"><div class="loading-state">Loading problem statement…</div></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>UNTITLED JUDGE WEB</span>
+      <span>LOCAL PROGRAMMING PRACTICE</span>
+      <span>CLASSROOM JUDGE · PRACTICE · DISCUSS</span>
+    </footer>
+
+    <dialog class="account-dialog" id="account-dialog" aria-labelledby="account-dialog-title">
+      <form id="account-form" class="account-form">
+        <div class="account-dialog-heading"><h2 id="account-dialog-title">Log in</h2><button type="button" class="dialog-close" id="close-account-dialog" aria-label="Close">×</button></div>
+        <p id="account-dialog-description">Log in to save submissions and join the forum.</p>
+        <label class="field-label" for="account-username">USERNAME</label>
+        <input class="form-control" id="account-username" name="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_]+" autocomplete="username">
+        <label class="field-label" for="account-password">PASSWORD</label>
+        <input class="form-control" id="account-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="current-password">
+        <div class="account-form-error" id="account-form-error" aria-live="polite"></div>
+        <button type="submit" class="submit-button" id="account-submit">LOG IN</button>
+        <button type="button" class="plain-button account-switch" id="account-switch">Need an account? Create one</button>
+      </form>
+    </dialog>
+
+  </body>
+</html>
