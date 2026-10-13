@@ -69,6 +69,24 @@ const MIME_TYPES = {
   ".in": "text/plain; charset=utf-8",
 };
 
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Content-Security-Policy": [
+    "default-src 'self'",
+    "script-src 'self' https://www.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://identitytoolkit.googleapis.com",
+    "frame-src 'self' https://*.firebaseapp.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; "),
+};
+
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const database = new DatabaseSync(path.join(DATA_DIR, "untitled-judge.db"));
 database.exec(`
@@ -529,7 +547,10 @@ function validateAdminProblemUploads(body) {
 }
 
 function send(response, status, body, contentType = "application/json; charset=utf-8") {
-  response.writeHead(status, { "Content-Type": contentType, "X-Content-Type-Options": "nosniff" });
+  response.writeHead(status, {
+    ...SECURITY_HEADERS,
+    "Content-Type": contentType,
+  });
   response.end(body);
 }
 
@@ -1213,10 +1234,10 @@ async function handleUserApi(request, response, url) {
     }
     const contentType = adminProblemAssetRoute[1] === "pdf" ? "application/pdf" : asset.content_type;
     response.writeHead(200, {
+      ...SECURITY_HEADERS,
       "Content-Type": contentType,
       "Content-Length": asset.data.byteLength,
       "Content-Disposition": adminProblemAssetRoute[1] === "pdf" ? 'inline; filename="statement.pdf"' : "inline",
-      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "public, max-age=3600",
     });
     response.end(request.method === "HEAD" ? undefined : Buffer.from(asset.data));
@@ -1339,11 +1360,11 @@ async function handleUserApi(request, response, url) {
       return true;
     }
     response.writeHead(200, {
+      ...SECURITY_HEADERS,
       "Content-Type": avatar.content_type,
       "Content-Length": avatar.data.byteLength,
       "Content-Disposition": "inline",
       "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff",
     });
     response.end(request.method === "HEAD" ? undefined : Buffer.from(avatar.data));
     return true;
@@ -1561,7 +1582,7 @@ async function handleUserApi(request, response, url) {
         return true;
       }
       if (database.prepare("SELECT 1 FROM users WHERE email_key = ?").get(emailKey)) {
-        jsonError(response, 409, "An account with that email address already exists.");
+        jsonError(response, 409, "That username or email is already taken.");
         return true;
       }
       const salt = crypto.randomBytes(16);
@@ -2301,9 +2322,9 @@ async function handleUserApi(request, response, url) {
       return true;
     }
     response.writeHead(200, {
+      ...SECURITY_HEADERS,
       "Content-Type": image.mime_type,
       "Content-Length": image.image_data.byteLength,
-      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "private, max-age=3600",
     });
     response.end(Buffer.from(image.image_data));
@@ -2699,8 +2720,8 @@ function serveFile(request, response, filePath) {
     return;
   }
   response.writeHead(200, {
+    ...SECURITY_HEADERS,
     "Content-Type": contentType,
-    "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store",
   });
   if (request.method === "HEAD") {
@@ -2712,7 +2733,7 @@ function serveFile(request, response, filePath) {
 
 const server = http.createServer(async (request, response) => {
   if (!["GET", "HEAD", "POST", "DELETE"].includes(request.method)) {
-    response.writeHead(405, { Allow: "GET, HEAD, POST, DELETE" });
+    response.writeHead(405, { ...SECURITY_HEADERS, Allow: "GET, HEAD, POST, DELETE" });
     response.end();
     return;
   }
@@ -2780,14 +2801,14 @@ const server = http.createServer(async (request, response) => {
         return;
     }
     if (request.method === "POST") {
-      response.writeHead(405, { Allow: "GET, HEAD" });
+      response.writeHead(405, { ...SECURITY_HEADERS, Allow: "GET, HEAD" });
       response.end();
       return;
     }
   }
 
   if (request.method === "POST") {
-    response.writeHead(405, { Allow: "GET, HEAD" });
+    response.writeHead(405, { ...SECURITY_HEADERS, Allow: "GET, HEAD" });
     response.end();
     return;
   }
