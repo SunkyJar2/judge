@@ -323,6 +323,10 @@
           <label class="field-label" for="account-password">PASSWORD</label>
           <input class="form-control" id="account-password" name="password" type="password" required minlength="10" maxlength="128" autocomplete="current-password">
         </div>
+        <div id="account-confirm-password-group" class="hidden">
+          <label class="field-label" for="account-confirm-password">CONFIRM PASSWORD</label>
+          <input class="form-control" id="account-confirm-password" name="confirmPassword" type="password" minlength="10" maxlength="128" autocomplete="new-password">
+        </div>
         <div id="account-confirm-group" class="hidden">
           <label class="field-label" id="account-confirm-label" for="account-confirm-code">6-DIGIT LOGIN CONFIRMATION CODE</label>
           <input class="form-control confirm-code-input" id="account-confirm-code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="123456">

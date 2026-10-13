@@ -33,6 +33,8 @@ const ui = {
   accountEmail: document.querySelector("#account-email"),
   accountPasswordGroup: document.querySelector("#account-password-group"),
   accountPassword: document.querySelector("#account-password"),
+  accountConfirmPasswordGroup: document.querySelector("#account-confirm-password-group"),
+  accountConfirmPassword: document.querySelector("#account-confirm-password"),
   accountConfirmGroup: document.querySelector("#account-confirm-group"),
   accountConfirmLabel: document.querySelector("#account-confirm-label"),
   accountConfirmCode: document.querySelector("#account-confirm-code"),
@@ -507,6 +509,12 @@ function openAuthDialog(mode = "login") {
   ui.accountPassword.autocomplete = isRegister ? "new-password" : "current-password";
   ui.accountPassword.minLength = isRegister ? 10 : 1;
 
+  ui.accountConfirmPasswordGroup.classList.toggle("hidden", !isRegister);
+  ui.accountConfirmPassword.required = isRegister;
+  if (!isRegister) {
+    ui.accountConfirmPassword.value = "";
+  }
+
   ui.accountConfirmGroup.classList.toggle("hidden", !isConfirmCode);
   ui.accountConfirmCode.required = isConfirmCode;
 
@@ -667,10 +675,21 @@ async function handleAccountSubmit(event) {
       return;
     }
 
+    if (mode === "register") {
+      const password = ui.accountPassword.value;
+      const confirmPassword = ui.accountConfirmPassword.value;
+      if (password !== confirmPassword) {
+        showFormError(ui.accountError, "Passwords do not match.");
+        ui.accountConfirmPassword.focus();
+        submitButton.disabled = false;
+        return;
+      }
+    }
+
     const payload = {
       username: ui.accountUsername.value.trim(),
       password: ui.accountPassword.value,
-      ...(mode === "register" ? { email: ui.accountEmail.value.trim() } : {}),
+      ...(mode === "register" ? { email: ui.accountEmail.value.trim(), confirmPassword: ui.accountConfirmPassword.value } : {}),
     };
     const result = await apiRequest(`/api/auth/${mode}`, {
       method: "POST",

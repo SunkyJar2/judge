@@ -1548,6 +1548,10 @@ async function handleUserApi(request, response, url) {
         jsonError(response, 400, "Password must be 10 to 128 characters.");
         return true;
       }
+      if (typeof body.confirmPassword !== "string" || body.password !== body.confirmPassword) {
+        jsonError(response, 400, "Passwords do not match.");
+        return true;
+      }
       const username = body.username;
       const usernameKey = username.toLocaleLowerCase("en-US");
       const email = body.email.trim();
