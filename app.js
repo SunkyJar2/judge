@@ -704,9 +704,20 @@ async function handleAccountSubmit(event) {
         return;
       }
       if (result.method === "firebase") {
-        await sendFirebaseLoginConfirmationLink(result);
-        openAuthDialog("confirm-firebase");
-        return;
+        try {
+          await sendFirebaseLoginConfirmationLink(result);
+          openAuthDialog("confirm-firebase");
+          return;
+        } catch (error) {
+          const isNotAllowed = error.code === "auth/operation-not-allowed" ||
+            error.code === "auth/internal-error" ||
+            (error.message && (error.message.includes("operation-not-allowed") || error.message.includes("internal-error")));
+          const message = isNotAllowed
+            ? "Firebase Email Link is not enabled in Firebase Console. Enable 'Email link (passwordless sign-in)' under Authentication > Sign-in method in Firebase Console, or configure SMTP in the Admin tab."
+            : (error.message || "Could not send login confirmation email.");
+          showFormError(ui.accountError, message);
+          return;
+        }
       }
     }
 
@@ -1118,6 +1129,7 @@ async function loadAdminAuthSettings() {
       : "16-character app password or SMTP password";
     document.querySelector("#admin-smtp-from").value = settings.smtpFrom || "";
     document.querySelector("#admin-require-email-confirm").checked = settings.requireEmailConfirmation !== false;
+    document.querySelector("#admin-firebase-email-link").checked = Boolean(settings.firebaseEmailLinkEnabled);
   } catch (error) {
     showFormError(ui.adminAuthError, error.message);
   }
@@ -1161,6 +1173,7 @@ async function saveAdminAuthSettings(event) {
         smtpPass: document.querySelector("#admin-smtp-pass").value,
         smtpFrom: document.querySelector("#admin-smtp-from").value.trim(),
         requireEmailConfirmation: document.querySelector("#admin-require-email-confirm").checked,
+        firebaseEmailLinkEnabled: document.querySelector("#admin-firebase-email-link").checked,
         testEmail,
       }),
     });

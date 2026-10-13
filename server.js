@@ -76,11 +76,11 @@ const SECURITY_HEADERS = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   "Content-Security-Policy": [
     "default-src 'self'",
-    "script-src 'self' https://www.gstatic.com",
+    "script-src 'self' https://apis.google.com https://www.gstatic.com",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://identitytoolkit.googleapis.com",
-    "frame-src 'self' https://*.firebaseapp.com",
+    "img-src 'self' data: https: https://*.googleusercontent.com",
+    "connect-src 'self' https://*.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com",
+    "frame-src 'self' https://*.firebaseapp.com https://accounts.google.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -697,6 +697,7 @@ function getAuthSettings() {
   const smtpPass = stored.smtpPass ?? DEFAULT_SMTP_PASS;
   const smtpFrom = (stored.smtpFrom ?? DEFAULT_SMTP_FROM).trim() || smtpUser;
   const requireEmailConfirmation = stored.requireEmailConfirmation !== "false";
+  const firebaseEmailLinkEnabled = stored.firebaseEmailLinkEnabled === "true";
   const firebaseEnabled = Boolean(firebaseApiKey && firebaseAuthDomain && firebaseProjectId);
   const smtpEnabled = Boolean(smtpHost && smtpUser && smtpPass);
   return {
@@ -710,6 +711,7 @@ function getAuthSettings() {
     smtpPass,
     smtpFrom,
     requireEmailConfirmation,
+    firebaseEmailLinkEnabled,
     firebaseEnabled,
     smtpEnabled,
   };
@@ -733,9 +735,9 @@ function publicAuthConfig() {
     ? "off"
     : settings.smtpEnabled
       ? "code"
-      : settings.firebaseEnabled
+      : settings.firebaseEmailLinkEnabled && settings.firebaseEnabled
         ? "firebase"
-        : "unconfigured";
+        : "off";
   return {
     firebase: {
       enabled: settings.firebaseEnabled,
@@ -745,7 +747,7 @@ function publicAuthConfig() {
       appId: settings.firebaseAppId,
     },
     emailConfirmation: {
-      enabled: emailMode !== "off" && emailMode !== "unconfigured",
+      enabled: emailMode !== "off",
       mode: emailMode,
     },
   };
@@ -1262,6 +1264,7 @@ async function handleUserApi(request, response, url) {
       smtpFrom: settings.smtpFrom,
       hasSmtpPass: Boolean(settings.smtpPass),
       requireEmailConfirmation: settings.requireEmailConfirmation,
+      firebaseEmailLinkEnabled: settings.firebaseEmailLinkEnabled,
       firebaseEnabled: settings.firebaseEnabled,
       smtpEnabled: settings.smtpEnabled,
     }));
@@ -1654,7 +1657,7 @@ async function handleUserApi(request, response, url) {
           }));
           return true;
         }
-        if (settings.firebaseEnabled) {
+        if (settings.firebaseEnabled && settings.firebaseEmailLinkEnabled) {
           const challengeToken = crypto.randomBytes(32).toString("hex");
           const tokenHash = crypto.createHash("sha256").update(challengeToken).digest("hex");
           const expiresAt = Date.now() + LOGIN_CHALLENGE_LIFETIME;
@@ -1903,6 +1906,7 @@ async function handleUserApi(request, response, url) {
         smtpUser: typeof body.smtpUser === "string" ? body.smtpUser.trim() : "",
         smtpFrom: typeof body.smtpFrom === "string" ? body.smtpFrom.trim() : "",
         requireEmailConfirmation: body.requireEmailConfirmation === false ? "false" : "true",
+        firebaseEmailLinkEnabled: body.firebaseEmailLinkEnabled === true ? "true" : "false",
       };
       if (typeof body.smtpPass === "string" && body.smtpPass.length > 0) {
         updates.smtpPass = body.smtpPass;

@@ -247,7 +247,8 @@
             <label class="admin-field"><span class="field-label">FROM EMAIL <span>OPTIONAL</span></span><input class="form-control" id="admin-smtp-from" autocomplete="off" placeholder="Defaults to SMTP username"></label>
             <label class="admin-field"><span class="field-label">TEST RECIPIENT EMAIL <span>OPTIONAL</span></span><input class="form-control" id="admin-smtp-test" type="email" autocomplete="off" placeholder="Send test code on save"></label>
           </div>
-          <label class="checkbox-row"><input type="checkbox" id="admin-require-email-confirm" checked><span>Require email confirmation when logging in with username/email and password</span></label>
+          <label class="checkbox-row"><input type="checkbox" id="admin-require-email-confirm" checked><span>Require email confirmation when logging in with username/email and password (via SMTP 6-digit code)</span></label>
+          <label class="checkbox-row"><input type="checkbox" id="admin-firebase-email-link"><span>Allow Firebase passwordless email links if SMTP is not configured (requires Email Link enabled in Firebase Console)</span></label>
           <div id="admin-auth-error" class="account-form-error" aria-live="polite"></div>
           <button type="submit" class="submit-button" id="admin-auth-submit">SAVE AUTH SETTINGS</button>
         </form>
