@@ -1,14 +1,51 @@
 {
-  "name": "untitled-judge",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Self-hosted online judge for C17, C++17 and Python 3 with sandboxed grading, accounts, forum and progress tracking.",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "build:sandbox": "podman build -t untitled-judge-sandbox:latest judge-sandbox"
-  },
-  "engines": {
-    "node": ">=22.13.0"
-  }
+	"name": "domjudge-rewrite",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^8.0.0",
+		"@sveltejs/adapter-node": "^6.0.0",
+		"@sveltejs/kit": "^3.0.0",
+		"@sveltejs/vite-plugin-svelte": "^7.2.0",
+		"@tailwindcss/vite": "^4.3.3",
+		"@types/adm-zip": "^0.6.0",
+		"@types/bun": "^1.4.3",
+		"@types/nodemailer": "^8.0.2",
+		"@types/pg": "^8.23.1",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.6.0",
+		"tailwindcss": "^4.3.3",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.0"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
+	},
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.10.0",
+		"@prisma/client": "7.10.0",
+		"@prisma/orm-postgres": "^8.0.0-rc.18",
+		"adm-zip": "^0.6.1",
+		"better-auth": "^1.7.9",
+		"dotenv": "^18.0.8",
+		"isomorphic-dompurify": "^4.5.0",
+		"marked": "^18.1.1",
+		"nodemailer": "^10.1.1",
+		"pg": "^8.23.1",
+		"prisma": "7.10.0",
+		"redis": "^6.3.0",
+		"sharp": "^0.35.5",
+		"yaml": "^2.9.1",
+		"zod": "^4.6.7"
+	}
 }

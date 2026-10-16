@@ -1,24 +1,23 @@
-# Runtime data (SQLite database with accounts, sessions, forum content)
-.site-data/
+node_modules
 
-# Problem sets and testcases are kept private (secret tests must not be public)
-/FP/
-/Modul */
-/DP P1 all/
-/judge-c-solutions/
+# Output
+.output
+.vercel
+.netlify
+.wrangler
+/.svelte-kit
+/build
 
-# Scratch / audit output
-.tmp*/
-.tmp*
-*.exe
-*.o
-*.out
-
-# Tooling
-node_modules/
-.vscode/
-.idea/
+# OS
 .DS_Store
 Thumbs.db
-*.log
+
+# Env
 .env
+.env.*
+!.env.example
+!.env.test
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

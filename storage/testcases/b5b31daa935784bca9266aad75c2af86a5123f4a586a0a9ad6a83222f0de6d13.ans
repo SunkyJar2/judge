@@ -1,0 +1,12 @@
+SATU SOLUSI
+1.00 2.00
+
+
+Sistem Persamaan Linier (EN)
+Given a system of two linear equations with two variables:
+3.​ax + by = c
+4.​px + qy = r
+Your task is to determine whether the system has ONE SOLUTION (intersecting lines),
+INFINITELY MANY SOLUTIONS (coincident lines), or NO SOLUTION (parallel lines). If it
+has exactly one solution, print the values of x and y rounded to two decimal places.
+Input
