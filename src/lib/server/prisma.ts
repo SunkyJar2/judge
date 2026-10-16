@@ -1,10 +1,13 @@
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+import type { PrismaClient as PrismaClientType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+
+const PrismaClient = pkg.PrismaClient || (pkg as any).default?.PrismaClient;
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5433/untitled_judge?schema=public';
 const adapter = new PrismaPg({ connectionString });
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClientType };
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 
