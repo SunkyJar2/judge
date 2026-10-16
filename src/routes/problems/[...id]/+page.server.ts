@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { prisma } from '#lib/server/prisma';
 import { marked } from 'marked';
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
 import { SUPPORTED_LANGUAGES } from '#lib/server/judge/client';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -39,7 +39,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   let sanitizedHtml: string | null = null;
   if (problem.statementMd) {
     const rawHtml = await marked.parse(problem.statementMd);
-    sanitizedHtml = DOMPurify.sanitize(rawHtml);
+    sanitizedHtml = sanitizeHtml(rawHtml);
   }
 
   // Check if solved by current user
