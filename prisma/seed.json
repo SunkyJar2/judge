@@ -1,0 +1,1496 @@
+[
+  {
+    "id": "DP P1 all/PDF Archive/DP1-01",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-01",
+    "title": "Aku Lari",
+    "statementMd": "# Aku Lari\n\n**Batas Waktu:** 1s | **Batas Memori:** 256 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nKamu terjebak di dalam gua bersama dua penjahat yang berusaha menangkapmu. Gua ini\n\nsangat sempit, sehingga dua orang tidak bisa berdiri di titik yang sama atau melewati orang lain\n\nyang ada di depannya. Setiap orang memiliki kecepatan berlari masing-masing.\n\nPanjang gua dinyatakan sebagai N, dengan titik-titik yang dimulai dari 1, 2, 3, ..., N. Kamu berada\n\ndi posisi X (1 <= X <= N) dengan kecepatan Vx. Dua penjahat berada di posisi berbeda: Penjahat\n\n1 di posisi P1 dengan kecepatan Vp1, dan Penjahat 2 di posisi P2 dengan kecepatan Vp2.\n\nKarena kutukan di dalam gua, saat kamu bergerak sejauh Vx dari posisimu, para penjahat akan\n\nberubah menjadi batu. Namun, saat penjahat bergerak sejauh kecepatan mereka masingmasing, giliran kamu yang akan berubah menjadi batu. Giliran bergerak dimulai dari kamu,\n\nkemudian para penjahat, dan seterusnya secara bergantian.\n\nAlih-alih melarikan diri, kamu malah memutuskan untuk membuat program yang mengecek\n\napakah kamu akan tertangkap atau berhasil melarikan diri. Kamu dianggap berhasil melarikan\n\ndiri jika bisa mencapai titik 0 atau titik N+1. Namun, jika penjahat menangkapmu sebelum kamu\n\nmencapai titik-titik tersebut, kamu akan dianggap tertangkap.\n\nX = 5 (Posisi awalmu)\n\nVx = 3 (kecepatanmu)\n\nP1 = 2 (posisi awal penjahat 1)\n\nVp1 = 4 (kecepatan penjahat 1)\n\nP2 = 3 (posisi awal penjahat 2)\n\nVp2 = 2 (kecepatan penjahat 2)\n\nN = 10\n\n1\n\n2\n\nGambar diatas adalah awal mula posisi, Lingkaran biru adalah posisimu sedangkan lingkaran merah\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n10\n53\n24\n32\n```\n\n### Contoh Keluaran 1\n```text\nbebas\n```\n\n### Contoh Masukan 2\n```text\n10\n53\n24\n92\n```\n\n### Contoh Keluaran 2\n```text\ntertangkap\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-01.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 256,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "10\n53\n24\n32\n",
+        "output": "bebas\n",
+        "isSample": true
+      },
+      {
+        "input": "10\n53\n24\n92\n",
+        "output": "tertangkap\n",
+        "isSample": true
+      },
+      {
+        "input": "10\n53\n24\n32\n",
+        "output": "bebas\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-02",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-02",
+    "title": "Ancient Sophistication",
+    "statementMd": "# Ancient Sophistication\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nUpon opening an ancient math and science codex from the lost civilization of\n\nSophotopia, you—a world-renowned explorer and logician—found out that the\n\nnumbers in the formulas of the codec are encrypted.\n\nYou realized this upon seeing this impossible formula written somewhere on the\n\ncodex:\n\nfor it is certain, that the summation of 1 and -1 be equal 1.5.\n\nLuckily, the first page of the book contains a list of numbers and the values they\n\nturn into after being decrypted, which reads like below:\n\nthis book will grant wisdom to those who are worthy of it—if one were to obtain a\n\nwisdom in numbers, one must obtain a wisdom in patterns\n\n5 —> 25 | 0.5 —> 1 | -3 —> 9 | -0.4 —> 0.16 | 1.5 —>3\n\nFind out what pattern is used to decrypt the numbers, and unlock the secrets\n\ncontained in the ancient codex.\n\nConstraints:\n\n- -DBL_MAX <= OUTPUT_NUMBER <= DBL_MAX\n\n- Input and Output number will always be in datatype double\n\nIUP1—If Else, Arithmetics\n\nHINT: THERE ARE 2 GENERAL SOLUTIONS, EACH LOOKING SOMEWHAT\n\nSIMILAR TO EACH OF THE CODES BELOW\n\nint main() {\n\ndouble n; scanf(\" %lf\", &n);\n\ndouble num1 = /*do some arithmetics on n*/;\n\ndouble num2 = /*do another type of arithmetics on n*/;\n\nprintf(\"%lf\\n\", (num1 > num2) ? num1 : num2);\n\nreturn 0;\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n5\n```\n\n### Contoh Keluaran 1\n```text\n25.000000\n```\n\n### Contoh Masukan 2\n```text\n0.5\n```\n\n### Contoh Keluaran 2\n```text\n1.000000\n```\n\n### Contoh Masukan 3\n```text\n-3\n```\n\n### Contoh Keluaran 3\n```text\n9.000000\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-02.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "5\n",
+        "output": "25.000000\n",
+        "isSample": true
+      },
+      {
+        "input": "0.5\n",
+        "output": "1.000000\n",
+        "isSample": true
+      },
+      {
+        "input": "-3\n",
+        "output": "9.000000\n",
+        "isSample": true
+      },
+      {
+        "input": "-0.4\n",
+        "output": "0.160000\n",
+        "isSample": false
+      },
+      {
+        "input": "1.5\n",
+        "output": "3.000000\n",
+        "isSample": false
+      },
+      {
+        "input": "-1.5\n",
+        "output": "2.250000\n",
+        "isSample": false
+      },
+      {
+        "input": "0.4\n",
+        "output": "0.800000\n",
+        "isSample": false
+      },
+      {
+        "input": "-5.5\n",
+        "output": "30.250000\n",
+        "isSample": false
+      },
+      {
+        "input": "0\n",
+        "output": "0.000000\n",
+        "isSample": false
+      },
+      {
+        "input": "1\n",
+        "output": "2.000000\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-03",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-03",
+    "title": "Anthony VS Gedagedigedagedo",
+    "statementMd": "# Anthony VS Gedagedigedagedo\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nAnthony Setiawan duduk dengan serius di depan layar komputer. Dia baru saja menerima\n\ntantangan dari musuh bebuyutannya, nugget licik bernama Gedagedigedagedo. Nugget ini\n\nbukan nugget biasa; dia terkenal di dunia kompetisi pemrograman karena selalu membuat soalsoal yang terlihat mudah tapi penuh jebakan tersembunyi. Dan kali ini, Anthony harus\n\nmenyelesaikan soal buatan Gedagedigedagedo untuk bisa mengalahkannya.\n\n“Soal ini mudah,” kata Gedagedigedagedo dengan suara liciknya. “Kau hanya perlu\n\nmengerjakan operasi matematika antara dua bilangan. Namun, ada beberapa aturan kecil yang\n\nharus kau ikuti, tapi aku tak akan memberitahumu apa aturannya. Selamat berjuang, Anthony!”\n\nAnthony mengerutkan kening. Dia tahu betul bahwa tidak ada yang mudah jika\n\nGedagedigedagedo terlibat. Meskipun soal yang diberikan terlihat sederhana, pasti ada sesuatu\n\nyang disembunyikan.\n\nSetelah merenung, akhirnya Anthony teringat dua aturan utama yang sering digunakan\n\nGedagedigedagedo:\n\n1. Jika salah satu bilangan bisa dibagi dengan bilangan lainnya tanpa sisa, maka\n\nbilangan terkecil harus diubah tandanya. Artinya, jika positif menjadi negatif, dan jika\n\nnegatif menjadi positif.\n\n2. Jika kedua bilangan sama, bilangan di sebelah kiri operator otomatis berubah menjadi\n\n0.\n\nBantulah Anthony\n\nGedagedigedagedo!\n\nuntuk\n\nmenemukan\n\njawaban\n\nyang\n\ntepat\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n2+4\n```\n\n### Contoh Keluaran 1\n```text\n2.00\n```\n\n### Contoh Masukan 2\n```text\n6*6\n```\n\n### Contoh Keluaran 2\n```text\n0.00\n\nNote: Untuk pembagian, pastikan pembilang merupakan bilangan float sebelum\nmelakukan pengoperasian!\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-03.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "2+4\n",
+        "output": "2.00\n",
+        "isSample": true
+      },
+      {
+        "input": "6*6\n",
+        "output": "0.00\n\nNote: Untuk pembagian, pastikan pembilang merupakan bilangan float sebelum\nmelakukan pengoperasian!\n",
+        "isSample": true
+      },
+      {
+        "input": "2+4\n",
+        "output": "2.00\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-04",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-04",
+    "title": "ASDP",
+    "statementMd": "# ASDP\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\npenting. Kamu sebagai temannya penasaran, bagaimana cara Kaisar\n\nmengartikan sebuah angka itu, sehingga kamu mencoba untuk memahami.\n\nJika diberikan informasi sebuah baris angka, informasi penting apa yang bisa\n\nkamu dapatkan dari baris angka tersebut?\n\nMasukan terdiri dari satu baris angka.\n\nKeluaran terdiri dari satu baris info.\n\nCONSTRAINT\n\n19\n\n1 ≤ 𝑎𝑛𝑔𝑘𝑎 ≤ 10\n\n4747\n\naku suka 1314 dasar pemrograman\n\nPENJELASAN OUTPUT 1\n\n4747 modulo 2 = 1\n\n4747 modulo 4 = 3\n\n4747 modulo 7 = 1\n\n4747 modulo 9 = 4\n\nsehingga info yang didapatkan “aku suka 1314 dasar pemrograman”\n\n846921402\n\naku suka 25 dasar pemrograman\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n4747\n```\n\n### Contoh Keluaran 1\n```text\naku suka 1314 dasar pemrograman\n```\n\n### Contoh Masukan 2\n```text\n846921402\n```\n\n### Contoh Keluaran 2\n```text\naku suka 25 dasar pemrograman\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-04.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "4747\n",
+        "output": "aku suka 1314 dasar pemrograman\n",
+        "isSample": true
+      },
+      {
+        "input": "846921402\n",
+        "output": "aku suka 25 dasar pemrograman\n",
+        "isSample": true
+      },
+      {
+        "input": "4747\n",
+        "output": "aku suka 1314 dasar pemrograman\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-05",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-05",
+    "title": "Board Game Anomali",
+    "statementMd": "# Board Game Anomali\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nJika kemenangan merupakan angka 1 maka print “Keberuntungan ada di kamu, selamat\n\nArya”\n\nJika kemenangan merupakan angka 2 maka print “Keberuntungan ada di kamu, selamat\n\nAndi”\n\nJika ada dua kemenangan, print “Terjadi alomani dua kemenangan!”. Kemudian pada\n\nbaris selanjutnya jika kedua player yang menang print “Lah dua duanya menang, selamat\n\nArya dan Andi”. Jika salah satu menang dua kali maka print “Lah menang dua kali kamu\n\nArya” untuk angka 1 dan “Lah menang dua kali kamu Andi” untuk angka 2\n\n-\n\nJika tidak ada kemenangan, “Yahh kurang beruntung nih, gaada kemenangan!”\n\n2 4 6 8 10 12 14 16 18\n\n2|1|0\n\n2|1|0\n\n2|1|0\n\nTerjadi alomani dua kemenangan!\n\nLah dua duanya menang, selamat Arya dan Andi\n\n1231 429 292 928 2039 339 939 920 9273\n\n1|0|1\n\n1|2|0\n\n0|2|0\n\nYahh kurang beruntung nih, gaada kemenangan!\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n2 4 6 8 10 12 14 16 18\n```\n\n### Contoh Keluaran 1\n```text\n2|1|0\n2|1|0\n2|1|0\nTerjadi alomani dua kemenangan!\nLah dua duanya menang, selamat Arya dan Andi\n```\n\n### Contoh Masukan 2\n```text\n1231 429 292 928 2039 339 939 920 9273\n```\n\n### Contoh Keluaran 2\n```text\n1|0|1\n1|2|0\n0|2|0\nYahh kurang beruntung nih, gaada kemenangan!\n```\n\n### Contoh Masukan 3\n```text\n838 383 3239 891 394 756 391 293 784\n```\n\n### Contoh Keluaran 3\n```text\n1|2|2\n0|1|0\n1|2|1\nKeberuntungan ada di kamu, selamat Arya\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-05.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "2 4 6 8 10 12 14 16 18\n",
+        "output": "2|1|0\n2|1|0\n2|1|0\nTerjadi alomani dua kemenangan!\nLah dua duanya menang, selamat Arya dan Andi\n",
+        "isSample": true
+      },
+      {
+        "input": "1231 429 292 928 2039 339 939 920 9273\n",
+        "output": "1|0|1\n1|2|0\n0|2|0\nYahh kurang beruntung nih, gaada kemenangan!\n",
+        "isSample": true
+      },
+      {
+        "input": "838 383 3239 891 394 756 391 293 784\n",
+        "output": "1|2|2\n0|1|0\n1|2|1\nKeberuntungan ada di kamu, selamat Arya\n",
+        "isSample": true
+      },
+      {
+        "input": "2 4 6 8 10 12 14 16 18\n",
+        "output": "2|1|0\n2|1|0\n2|1|0\nTerjadi alomani dua kemenangan!\nLah dua duanya menang, selamat Arya dan Andi\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-06",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-06",
+    "title": "Childe Act I",
+    "statementMd": "# Childe Act I\n\n**Batas Waktu:** 1s | **Batas Memori:** 256 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nZhongli adalah salah satu archon dari tujuh negara di Teyvat. Sebagai archon Liyue, ia\n\nmemiliki benda berharga yang setiap archon miliki yaitu gnosis. Childe sebagai salah satu\n\nharbinger Fatui ditugaskan untuk datang ke Liyue dan mengambil gnosis Zhongli. Keesokan\n\nharinya, datanglah Childe ke Golden House, tempat Zhongli bertahta. Sesuai ekspektasi\n\nChilde, di sanalah Zhongli berada. Namun, Zhongli tidak terlihat terkejut sama sekali. Ia\n\njustru menantang Childe untuk mengambil gnosis dari tangannya sendiri. Childe pun\n\nmenerima tantangan Zhongli.\n\nGolden House merupakan sebuah bidang dua dimensi dengan ukuran N × M (N baris, M\n\nkolom). Dinyatakan koordinat (R, C) sebagai koordinat baris R dan kolom C dari sebuah\n\nkotak, sehingga posisi Childe terletak pada koordinat (RC, CC) dan posisi Zhongli terletak\n\npada koordinat (RZ, CZ).\n\nSetiap detik, Childe bisa berpindah kotak sebanyak satu langkah ke salah satu dari empat\n\narah (utara, timur, selatan, barat). Sedangkan, karena Zhongli sangat sakti, ia hanya diam di\n\ntempat dan menggunakan skillnya yaitu Dominus Lapidis. Dengan skill Dominus Lapidis,\n\nZhongli dapat membuat satu pilar batu muncul di kotak manapun (kecuali kotak yang\n\nditempati Childe dan Zhongli). Jika ada pilar batu di sebuah kotak, maka Childe tidak bisa\n\nmelangkah ke kotak tersebut. Zhongli dapat melakukan skill Dominus Lapidis setiap dua\n\ndetik. Jadi, alur pertarungan dimulai dengan Zhongli melakukan skillnya, dilanjut dengan\n\nChilde berpindah kotak dua kali, dan berulang terus.\n\nChilde akan berusaha untuk secepat mungkin menuju ke kotak yang ditempati Zhongli untuk\n\nmengambil gnosisnya. Sedangkan, Zhongli akan berusaha untuk menggunakan skill\n\nDominus Lapidis seminimal mungkin untuk menutup semua kemungkinan jalan Childe\n\nmenuju dirinya. Jika Childe dan Zhongli melakukan halnya masing-masing secara optimal,\n\ntunjukkan siapa yang akan mencapai tujuannya terlebih dahulu.\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n10 10\n3645\n```\n\n### Contoh Keluaran 1\n```text\nChilde: \"E\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-06.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 256,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "10 10\n3645\n",
+        "output": "Childe: \"E\n",
+        "isSample": true
+      },
+      {
+        "input": "10 10\n3645\n",
+        "output": "Childe: \"E\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-07",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-07",
+    "title": "Circles",
+    "statementMd": "# Circles\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDescription\n\nFurina adalah seorang artis di Fontaine. Dia telah melakukan banyak pertunjukan dan\n\nakting sebelumnya. Akan tetapi, sebagai mantan archon hydro, dia merasa tidak nyaman\n\ndan belum cukup kenal dengan archon-archon lainnya. Maka dimulailah petualangan\n\nFurina untuk mengunjungi archon-archon pada daerah lain.\n\nFurina memulai dari Mondstadt. Di sana, dia bertemu Venti yang merupakan archon\n\nanemo dari Mondstadt. Mereka banyak menceritakan tentang daerah mereka,\n\nbagaimana kebebasan di Mondstadt, arsitektur unik dari Fontaine, dan banyak lagi.\n\nKarena mereka secara teknis sama-sama artis (Furina seorang actress, dan Venti\n\nseorang bard) mereka melakukan sebuah kompetisi mini. Dengan kekuatan mereka,\n\nmereka akan mencoba membuat lingkaran dan melihat lingkaran siapa yang lebih\n\nestetik.\n\nFurina\n\n: “Lihatlah, punyaku lebih keren.”\n\nVenti\n\n: “Tidak! (sambil membuat lingkaran baru) tuh, punyaku jelas keren.”\n\nFurina\n\n: “Arggghh (membuat lingkaran dengan marah)”\n\nKedua lingkaran akhirnya bersentuhan dan lingkaran angin membuat lingkaran air rusak\n\ndan air muncrat kemana-mana. Untuk mencegah ini, mereka membutuhkan bantuan\n\nkalian!\n\nAkan terdapat dua lingkaran dengan titik pusat (x, y) dan jari jari r. Tentukan apakah\n\nkedua lingkaran tersebut berpotongan, bersinggungan, atau tidak.\n\nInput Format\n\nx1, y1, r1\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n112\n322\n```\n\n### Contoh Keluaran 1\n```text\nTidaaaaaak, airnya muncrat!\n7.00\n```\n\n### Contoh Masukan 2\n```text\n122\n223\n```\n\n### Contoh Keluaran 2\n```text\nFyuh, hampir saja\n-1.00 2.00\n```\n\n### Contoh Masukan 3\n```text\n1 2.1 2\n-4 2 3\n```\n\n### Contoh Keluaran 3\n```text\nAmang ges\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-07.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "112\n322\n",
+        "output": "Tidaaaaaak, airnya muncrat!\n7.00\n",
+        "isSample": true
+      },
+      {
+        "input": "122\n223\n",
+        "output": "Fyuh, hampir saja\n-1.00 2.00\n",
+        "isSample": true
+      },
+      {
+        "input": "1 2.1 2\n-4 2 3\n",
+        "output": "Amang ges\n",
+        "isSample": true
+      },
+      {
+        "input": "112\n322\n",
+        "output": "Tidaaaaaak, airnya muncrat!\n7.00\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-08",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-08",
+    "title": "Dhika, Blacky",
+    "statementMd": "# Dhika, Blacky\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nyang ada dan dipilih sangatlah acak. Jadi, disinilah kamu sekarang: dipilih oleh Dhika untuk\n\nmembantunya dalam memenangkan permainan. Apakah kamu siap untuk mengambil\n\ntantangan ini dan membantu Dhika?\n\n✅✅✅\n\nConstraint\n\na, b, c < 10⁶\n\nSebuah baris berisi tiga angka acak ukuran puzzle balok\n\nJika hasil operasi merupakan bilangan Pythagoras, keluarkan “YEY GO GET ANOTHER\n\nONE DHIKA!”\n\nJika bukan, keluarkan “OH NOOOO”\n\n7 24 25\n\nYEY GO GET ANOTHER ONE DHIKA!\n\n26 10 25\n\nOH NOOOO\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n7 24 25\n```\n\n### Contoh Keluaran 1\n```text\nYEY GO GET ANOTHER ONE DHIKA!\n```\n\n### Contoh Masukan 2\n```text\n26 10 25\n```\n\n### Contoh Keluaran 2\n```text\nOH NOOOO\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-08.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "7 24 25\n",
+        "output": "YEY GO GET ANOTHER ONE DHIKA!\n",
+        "isSample": true
+      },
+      {
+        "input": "26 10 25\n",
+        "output": "OH NOOOO\n",
+        "isSample": true
+      },
+      {
+        "input": "7 24 25\n",
+        "output": "YEY GO GET ANOTHER ONE DHIKA!\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-09",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-09",
+    "title": "El Kecepatan VS Ronaldowati",
+    "statementMd": "# El Kecepatan VS Ronaldowati\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nSelesaikan permasalahan pemrograman **El Kecepatan VS Ronaldowati** sesuai batasan waktu dan memori yang diberikan.\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n1\n```\n\n### Contoh Keluaran 1\n```text\n1\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-09.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "1\n",
+        "output": "1\n",
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-10",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-10",
+    "title": "Furina Adventure Part 1",
+    "statementMd": "# Furina Adventure Part 1\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\n(Di seluruh cerita Furina Adventure, Kamu bermain peran sebagai Neuvillette)\n\nDeskripsi Soal\n\nFurina de Fontaine atau bisa dipanggil Furina adalah seseorang pemimpin di kota yang bernama\n\nFontaine. Fontaine adalah sebuah kota besar yang terletak di Barat Laut Negara Teyvat. Furina adalah\n\npemimpin yang bijaksana, ramah, dan rendah hati. Beliau sering kali turun ke jalan untuk melihat\n\nkeadaan rakyat nya. Ketika ada yang kesusahan, Furina dengan senang hati membantu rakyat nya.\n\nOleh karena itu beliau sangat dihormati oleh rakyat nya.\n\nSuatu hari, datanglah sebuah surat dari pemimpin kota Inazuma yang bernama Raiden Shogun. Dia\n\nmengundang Furina untuk menghadiri acara ulang tahunnya. Karena Furina adalah pemimpin yang\n\nbaik, tentu saja dia menerima ajakan tersebut. Namun terdapat suatu masalah, yaitu letak kota\n\nFontaine dan Inazuma sangatlah jauh, sehingga tidak mungkin Furina berangkat sendirian.\n\nFurina lalu mengajak kamu (Neuvillette) sebagai Ludex of Fontaine untuk menemani nya selama\n\nberpetualang, karena dengan keikut sertaan kamu, Furina merasa aman dan nyaman. Namun, 2\n\norang saja tentu tidak cukup untuk mengarungi negeri Teyvat. Oleh karena itu Furina meminta tolong\n\nkepada mu untuk merekrut orang lagi. Maka dibukalah OPREC yang dapat diikuti oleh seluruh warga\n\nkota Fontaine untuk menemani Furina dan kamu. Setelah berbagai seleksi, ditemukanlah 7 orang\n\nyang memiliki skill tertinggi.\n\nNamun ternyata, Furina hanya memerlukan 3 orang saja untuk menemani nya. Sehingga Furina\n\nmengadakan satu seleksi lagi, yaitu tes kekuatan dari ketujuh orang tersebut. Setelah keluar hasil tes\n\nnya, Furina memintamu untuk mengurutkan data hasil tes tersebut. Agar memudahkan Furina\n\nmembaca hasil urutannya, beliau meminta mu untuk mengurutkan data tersebut dari terbesar\n\nhingga terkecil.\n\nBaris Pertama berisikan 7 bilangan asli A, B, C, D, E, F, dan G. Dimana masing masing dari bilangan\n\ntersebut me representasikan kekuatan dari 7 orang yang akan di uji oleh Furina.\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n1 5 2 6 6 9 12\n```\n\n### Contoh Keluaran 1\n```text\nSELEKSI NYA PASTI GA BENER, PREDIKSI NEUVILLETTE ADALAH MUTLAQ.\n```\n\n### Contoh Masukan 2\n```text\n12 15 9 10 21 3 7\n```\n\n### Contoh Keluaran 2\n```text\nPeringkat 1 memiliki kekuatan sebesar 21, AJAK DIA BERPETUALANG.\nPeringkat 2 memiliki kekuatan sebesar 15, AJAK DIA BERPETUALANG.\nPeringkat 3 memiliki kekuatan sebesar 12, AJAK DIA BERPETUALANG.\nPeringkat 4 memiliki kekuatan sebesar 10, YAH KEKUATANMU KURENG.\nPeringkat 5 memiliki kekuatan sebesar 9, YAH KEKUATANMU KURENG.\nPeringkat 6 memiliki kekuatan sebesar 7, YAH KEKUATANMU KURENG.\nPeringkat 7 memiliki kekuatan sebesar 3, YAH KEKUATANMU KURENG.\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-10.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "1 5 2 6 6 9 12\n",
+        "output": "SELEKSI NYA PASTI GA BENER, PREDIKSI NEUVILLETTE ADALAH MUTLAQ.\n",
+        "isSample": true
+      },
+      {
+        "input": "12 15 9 10 21 3 7\n",
+        "output": "Peringkat 1 memiliki kekuatan sebesar 21, AJAK DIA BERPETUALANG.\nPeringkat 2 memiliki kekuatan sebesar 15, AJAK DIA BERPETUALANG.\nPeringkat 3 memiliki kekuatan sebesar 12, AJAK DIA BERPETUALANG.\nPeringkat 4 memiliki kekuatan sebesar 10, YAH KEKUATANMU KURENG.\nPeringkat 5 memiliki kekuatan sebesar 9, YAH KEKUATANMU KURENG.\nPeringkat 6 memiliki kekuatan sebesar 7, YAH KEKUATANMU KURENG.\nPeringkat 7 memiliki kekuatan sebesar 3, YAH KEKUATANMU KURENG.\n",
+        "isSample": true
+      },
+      {
+        "input": "1 5 2 6 6 9 12\n",
+        "output": "SELEKSI NYA PASTI GA BENER, PREDIKSI NEUVILLETTE ADALAH MUTLAQ.\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-11",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-11",
+    "title": "Gauss Kecil",
+    "statementMd": "# Gauss Kecil\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi:\n\nDi alternate universe, Gauss lahir pada tahun 2006. Saat duduk di kelas 4 SD, gurunya memberikan\n\ntugas di kelas untuk menghitung jumlah dari 13 + 23 + ⋯ + 𝑛3. Sang guru memang berniat\n\nmeninggalkan kelas dan membiarkan murid-muridnya menyelesaikan perhitungan yang panjang\n\ntersebut. Namun, tak disangka, Gauss berhasil memberikan jawaban dengan sangat cepat. Tirulah cara\n\nGauss dalam menghitung.\n\n1 bilangan 𝑛\n\nOutputkan hasil perhitungan\n\nBatasan:\n\n1 ≤ 𝑛 ≤ 104\n\n1\n\n1\n\n2\n\n9\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n1\n```\n\n### Contoh Keluaran 1\n```text\n1\n```\n\n### Contoh Masukan 2\n```text\n2\n```\n\n### Contoh Keluaran 2\n```text\n9\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-11.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "1\n",
+        "output": "1\n",
+        "isSample": true
+      },
+      {
+        "input": "2\n",
+        "output": "9\n",
+        "isSample": true
+      },
+      {
+        "input": "1\n",
+        "output": "1\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-12",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-12",
+    "title": "Guten Morgen",
+    "statementMd": "# Guten Morgen\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nRaja di BBC Empire terbangun dari mimpi yang memberi dia inspirasi mengenai barisan angka\n\nyang terurut dari terkecil ke terbesar. Barisan ini terdiri dari semua angka yang dapat dihasilkan\n\ndari formula 2𝑚 + 2𝑛 , dimana 𝑚 dan 𝑛 adalah bilangan bulat (integer) dengan syarat 0 ≤ 𝑚 < 𝑛.\n\nSang Raja percaya bahwa ada teknologi yang tersembunyi di balik barisan tersebut yang dapat\n\nmemajukan kerajaan beliau.\n\nSang Raja pun mengumumkan kepada seluruh cendekiawan di kerajaannya, bahwa akan ada harta\n\nyang dapat menafkai 7 generasi menanti jika dapat menemukan cara untuk mendapatkan 𝑚 dan 𝑛\n\nyang direpresentasikan oleh nilai ke-𝐾 di barisan tersebut. Saudara kamu yang jago matematika\n\nmelihat bahwa terdapat pola di barisan tersebut. Carilah cara untuk menemukan 𝑚 dan 𝑛 pada\n\nnilai ke-𝐾 dari barisan tersebut.\n\nBatasan\n\n•\n\n𝐾 ≤ 109 , 𝐾 adalah posisi 𝑚 dan 𝑛 yang diminta di barisan tersebut.\n\nSatu nilai yang merepresentasikan 𝐾.\n\nDua nilai yang merepresentasikan 𝑚 dan 𝑛.\n\n1\n\n01\n\n3\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n1\n```\n\n### Contoh Keluaran 1\n```text\n01\n```\n\n### Contoh Masukan 2\n```text\n3\n```\n\n### Contoh Keluaran 2\n```text\n12\n```\n\n### Contoh Masukan 3\n```text\n5\n```\n\n### Contoh Keluaran 3\n```text\n13\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-12.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "1\n",
+        "output": "01\n",
+        "isSample": true
+      },
+      {
+        "input": "3\n",
+        "output": "12\n",
+        "isSample": true
+      },
+      {
+        "input": "5\n",
+        "output": "13\n",
+        "isSample": true
+      },
+      {
+        "input": "1\n",
+        "output": "01\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-13",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-13",
+    "title": "Huruf kok Genap",
+    "statementMd": "# Huruf kok Genap\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nDi sebuah pulau penuh dengan angka, terdapat sebuah huruf yang tersesat. Raja dari pulau angka\n\ntersebut dingin tetapi tidak kejam, sehingga beliau mengizinkan huruf tersebut untuk menempati\n\npulau tersebut, dengan satu syarat, yakni huruf tersebut harus mengetahui bahwa dia ganjil atau\n\ngenap. Bantulah huruf tersebut untuk mengetahui dirinya ganjil atau genap.\n\nBatasan\n\n•\n\n𝑁 = 1, N jumlah huruf\n\nSebuah huruf\n\nPenjelasan apakah huruf ganjil atau genap\n\nA\n\nA adalah ganjil.\n\nClue\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\nA\n```\n\n### Contoh Keluaran 1\n```text\nA adalah ganjil.\n\n\fClue\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-13.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "A\n",
+        "output": "A adalah ganjil.\n\n\fClue\n",
+        "isSample": true
+      },
+      {
+        "input": "A\n",
+        "output": "A adalah ganjil.\n\n\fClue\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-14",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-14",
+    "title": "Hutao Mengsad",
+    "statementMd": "# Hutao Mengsad\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nDILARANG MENGGUNAKAN ALGORITMA YANG ADA DILUAR MODUL 0 & 1\n\nAPABILA MELANGGAR AKAN TERKENA SANKSI NILAI 0\n\nW artinya HuTao berjalan ke atas.\n\nA artinya HuTao berjalan ke kiri.\n\nS artinya HuTao berjalan ke bawah.\n\nD artinya HuTao berjalan ke kanan.\n\nBatasan\n\n-250 ≤ a, b ≤ 250\n\n0 ≤ d ≤ 500\n\n75 35\n\n35 35\n\n10 20\n\nD 75\n\nW 35\n\nA 40\n\nS 20\n\n2\n\n17 38\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n75 35\n35 35\n10 20\nD 75\nW 35\nA 40\nS 20\n```\n\n### Contoh Keluaran 1\n```text\n2\n```\n\n### Contoh Masukan 2\n```text\n17 38\n29 40\n12 11\nW 50\nA 75\nS 30\nD 10\n```\n\n### Contoh Keluaran 2\n```text\nAku kangen kamu\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-14.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "75 35\n35 35\n10 20\nD 75\nW 35\nA 40\nS 20\n",
+        "output": "2\n",
+        "isSample": true
+      },
+      {
+        "input": "17 38\n29 40\n12 11\nW 50\nA 75\nS 30\nD 10\n",
+        "output": "Aku kangen kamu\n",
+        "isSample": true
+      },
+      {
+        "input": "75 35\n35 35\n10 20\nD 75\nW 35\nA 40\nS 20\n",
+        "output": "2\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-15",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-15",
+    "title": "kasihPaham",
+    "statementMd": "# kasihPaham\n\n**Batas Waktu:** 1s | **Batas Memori:** 256 MB\n\n## Deskripsi Soal\n\nDESKRIPSI\n\nKak\n\nGem\n\nsuka\n\nuntuk\n\nmembuat\n\nvideo\n\ndi\n\nsebuah platform media\n\nsosial. Ia sangat rajin untuk membuat konten dan mendapatkan banyak\n\nviews, like, dan comment. Karena Kak Gem yang semakin terkenal, Ia\n\nmendapatkan\n\nendors\n\ndari\n\nberbagai\n\nbrand\n\nternama.\n\nTetapi,\n\nKak Gem\n\nkesusahan untuk menentukan rate card yang tepat antara durasi video\n\ndalam detik dan bayaran yang diterimanya dalam rupiah.\n\nPerbandingan\n\nkurang\n\ndari\n\nantara\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n60 1000000\n```\n\n### Contoh Keluaran 1\n```text\nPAHAM!\n```\n\n### Contoh Masukan 2\n```text\n1000 100\n```\n\n### Contoh Keluaran 2\n```text\nGUWENDENG\nTapi tunggu dulu ;D\n```\n\n### Contoh Masukan 3\n```text\n1000 1000000000\n```\n\n### Contoh Keluaran 3\n```text\nGAK MASUK AKAL\nPAHAM!\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-15.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 256,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "60 1000000\n",
+        "output": "PAHAM!\n",
+        "isSample": true
+      },
+      {
+        "input": "1000 100\n",
+        "output": "GUWENDENG\nTapi tunggu dulu ;D\n",
+        "isSample": true
+      },
+      {
+        "input": "1000 1000000000\n",
+        "output": "GAK MASUK AKAL\nPAHAM!\n",
+        "isSample": true
+      },
+      {
+        "input": "60 1000000\n",
+        "output": "PAHAM!\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-16",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-16",
+    "title": "Katamari On The Rocks",
+    "statementMd": "# Katamari On The Rocks\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDescription :\n\nSaluton! Have you ever been to Esperanto?\n\nLooks like your dad, The King of All Cosmos, got drunk and destroyed\n\nall the stars in the sky. And if that wasn’t enough, you, The Prince, were\n\ntasked to rebuild all the stars and constellation too! But you, being the\n\ngood kid you are, accepted the task to create stars based on the objects\n\non Earth using your trusty Katamari. One of the constellation to rebuild,\n\nUrsa Major, requires you to roll up as many bears as possible. One problem,\n\nthere are lots of cows too on earth!\n\nSo, to help with your mission you need to build fences around these\n\ncows. Luckily, Mag, who’s proficient with computers, is willing to help you.\n\nUsing the language only computers can understand, Mag can determine\n\nthe optimal fence amount. Mag also stated that it’s better to reduce the\n\namount of fence if the perfect amount of fence is closer than adding more.\n\nNow your task is to learn how Mag did it!\n\nConstraints:\n\n-\n\n0 < input, n < 4,294,967,295\n\nInput:\n\n-\n\nThere will be only one, which is input, for how many fences you have\n\nOutput:\n\n-\n\nIf the given amount of fence is perfect, print It's the perfect amount,\n\nnice!.\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n1\n```\n\n### Contoh Keluaran 1\n```text\n1\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-16.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "1\n",
+        "output": "1\n",
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-17",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-17",
+    "title": "Merpy Membasmi Kurcaci",
+    "statementMd": "# Merpy Membasmi Kurcaci\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nMerpy Membasmi Kurcaci\n\nBy LaptopMerah\n\nMerpy adalah seorang kesatria pemberani yang hidup di kerajaan\n\ntersembunyi di Teknik Informatika. Ia harus menyelamatkan seorang\n\nputri yang terperangkap di lantai tertinggi sebuah menara ajaib.\n\nMenara ini memiliki beberapa lantai, yang diberi nomor dari 1 hingga\n\nN. Setiap lantai terdapat kurcaci yang harus Merpy kalahkan, dimana\n\nkurcaci\n\nbawah\n\ntersebut\n\nke\n\nlantai\n\nmemiliki\n\npaling\n\nkekuatan\n\natas,\n\ntertentu.\n\nsetiap\n\nDari\n\nkurcaci\n\nlantai\n\nmemiliki\n\npaling\n\nkekuatan\n\nsebesar 1, 2, 4, 8, 16, ..., dst.\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n10 25\n```\n\n### Contoh Keluaran 1\n```text\nMerpy berhasil menaklukan kurcaci hingga lantai 5\n```\n\n### Contoh Masukan 2\n```text\n10 600\n```\n\n### Contoh Keluaran 2\n```text\nMerpy berhasil menaklukan kurcaci hingga lantai 10\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-17.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "10 25\n",
+        "output": "Merpy berhasil menaklukan kurcaci hingga lantai 5\n",
+        "isSample": true
+      },
+      {
+        "input": "10 600\n",
+        "output": "Merpy berhasil menaklukan kurcaci hingga lantai 10\n",
+        "isSample": true
+      },
+      {
+        "input": "10 25\n",
+        "output": "Merpy berhasil menaklukan kurcaci hingga lantai 5\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-18",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-18",
+    "title": "P1E3",
+    "statementMd": "# P1E3\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi Soal\n\nSenku adalah seorang ahli pemrograman yang sedang membantu seorang ilmuwan menyelesaikan\n\nserangkaian operasi bit yang kompleks. Senku diminta untuk mengembangkan sebuah program yang\n\ndapat melakukan berbagai operasi berdasarkan perintah yang diberikan.\n\nSetiap kali program dijalankan, tiga nilai akan diberikan oleh pengguna:\n\n•\n\nNilai pertama a, yang merupakan bilangan bulat yang akan dimanipulasi.\n\n•\n\nNilai kedua b, yang merupakan bilangan bulat kedua yang digunakan untuk operasi.\n\n•\n\nNilai ketiga c, yang merupakan kode operasi yang akan menentukan jenis operasi yang harus\n\ndilakukan pada a dan b.\n\nProgram ini harus mampu melakukan 5 jenis operasi berdasarkan nilai c:\n\n1. Jika c=1, lakukan operasi Shift Kiri pada a sebanyak b kali.\n\n2. Jika c=2, lakukan operasi Shift Kanan pada a sebanyak b kali.\n\n3. Jika c=3, lakukan operasi AND antara a dan b.\n\n4. Jika c=4, lakukan operasi OR antara a dan b.\n\n5. Jika c=5, lakukan operasi XOR antara a dan b.\n\nProgram kemudian akan mencetak hasil akhir setelah operasi dilakukan.\n\n-\n\nBaris pertama: Dua bilangan bulat a dan b.\n\n-\n\nBaris kedua: Satu bilangan bulat c.\n\nAhli Bit – Dasar Pemrograman 2024\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n82\n1\n```\n\n### Contoh Keluaran 1\n```text\n32\n```\n\n### Contoh Masukan 2\n```text\n16 1\n2\n```\n\n### Contoh Keluaran 2\n```text\n8\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-18.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "82\n1\n",
+        "output": "32\n",
+        "isSample": true
+      },
+      {
+        "input": "16 1\n2\n",
+        "output": "8\n",
+        "isSample": true
+      },
+      {
+        "input": "82\n1\n",
+        "output": "32\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-19",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-19",
+    "title": "P1F2",
+    "statementMd": "# P1F2\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nJadi, ceritanya kamu ini adalah seorang player GTA Roleplay yang super nolep. Kamu sudah\n\nkelewat lama main sampai-sampai, tiba-tiba POOF, jiwa kamu masuk ke dalam monitor!\n\nSebagai player roleplay yang kini terperangkap di dunia virtual Los Santos, kamu harus\n\nmenyelesaikan misi-misi yang ada biar bisa kembali ke dunia nyata. Tapi ingat, waktu kamu\n\nterbatas hanya 3 jam untuk menyelesaikan misi-misi ini.\n\nDi dalam dunia GTA, ada tiga jenis misi berdasarkan tingkat kesulitannya:\n\n•\n\nMudah: Memakan waktu 30 menit.\n\n•\n\nSedang: Memakan waktu 45 menit.\n\n•\n\nSulit: Memakan waktu 90 menit.\n\nKamu bisa memilih hingga maksimal 3 misi. Setiap misi akan berbeda tingkat kesulitannya,\n\njadi kamu harus memilih dengan bijak karena kalau waktu kamu habis, bye bye kesempatan\n\nbalik ke dunia nyata!\n\nJika setelah menyelesaikan semua misi masih ada sisa waktu, kamu bisa memanfaatkannya\n\nuntuk aktivitas tambahan, seperti:\n\n•\n\nKalau sisa waktu kamu ≥ 30 menit: Benerin mobil kayanya asik di AutoWin. Anjay\n\nmulus!\n\n•\n\nKalau sisa waktu kamu ≥ 15 menit: Makan dulu gasih brow di Klenger Noodles.\n\nPerut kenyang hidup tenang!\n\n•\n\nTapi kalau waktu kamu < 15 menit: Jangan sok jago, mampus kan ga cukup\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n3\n1\n3\n2\n```\n\n### Contoh Keluaran 1\n```text\nTotal waktu yang dihabiskan: 165 menit\nSisa waktu: 15 menit\nMakan dulu gasih brow di Klenger Noodles. Perut kenyang hidup tenang!\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-19.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "3\n1\n3\n2\n",
+        "output": "Total waktu yang dihabiskan: 165 menit\nSisa waktu: 15 menit\nMakan dulu gasih brow di Klenger Noodles. Perut kenyang hidup tenang!\n",
+        "isSample": true
+      },
+      {
+        "input": "3\n1\n3\n2\n",
+        "output": "Total waktu yang dihabiskan: 165 menit\nSisa waktu: 15 menit\nMakan dulu gasih brow di Klenger Noodles. Perut kenyang hidup tenang!\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-20",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-20",
+    "title": "Pangkat-Tiga",
+    "statementMd": "# Pangkat-Tiga\n\n**Batas Waktu:** 1s | **Batas Memori:** 256 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nMr. Biti merupakan ilmuwan hebat yang suka sekali membuat robot. Pada suatu\n\nhari anak dari Mr. Biti, Cici, mempunyai suatu permasalahan yang susah sekali\n\ndiselesaikan yaitu diberi X bilangan dan Cici disuruh menghitung sebagai\n\nberikut:\n\n3\n\n3\n\n1 + 2 +... + (𝑋 − 1)\n\n3\n\n3\n\n+𝑋\n\nBantu Cici untuk menyelesaikan permasalahan tersebut.\n\n* Dilarang menggunakan looping, hanya boleh menggunakan cara di modul 0, 1 ^^\n\n*Perhatikan penjelasan test case agar lebih bisa memahami soal\n\n-\n\nBaris pertama X, jumlah bilangan yang akan dihitung.\n\n*Perhatikan penjelasan test case dengan agar lebih bisa memahami soal\n\n-\n\nKeluarkan hasil dari penjumlahan tersebut.\n\n*Perhatikan penjelasan test case dengan agar lebih bisa memahami soal\n\nBatasan\n\n● 1 ≤ 𝑋 ≤ 500\n\n* Dilarang menggunakan looping, hanya boleh menggunakan cara di modul 0, 1 ^^\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n1\n```\n\n### Contoh Keluaran 1\n```text\n1\n```\n\n### Contoh Masukan 2\n```text\n2\n```\n\n### Contoh Keluaran 2\n```text\n9\n```\n\n### Contoh Masukan 3\n```text\n3\n```\n\n### Contoh Keluaran 3\n```text\n36\n```\n\n### Contoh Masukan 4\n```text\n4\n```\n\n### Contoh Keluaran 4\n```text\n100\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-20.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 256,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "1\n",
+        "output": "1\n",
+        "isSample": true
+      },
+      {
+        "input": "2\n",
+        "output": "9\n",
+        "isSample": true
+      },
+      {
+        "input": "3\n",
+        "output": "36\n",
+        "isSample": true
+      },
+      {
+        "input": "4\n",
+        "output": "100\n",
+        "isSample": true
+      },
+      {
+        "input": "1\n",
+        "output": "1\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-21",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-21",
+    "title": "Pemilik Bisnis-1",
+    "statementMd": "# Pemilik Bisnis-1\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nPemilik Bisnis\n\nAdnan Abdullah Juan | 5025221155\n\nAyyaz adalah pemilik bisnis kue yang sukses di kotanya. Setiap harinya, ia harus memastikan stok\n\nkue di tiga tokonya selalu cukup untuk memenuhi permintaan pelanggan. Namun, stok di setiap\n\ntoko bisa bervariasi setiap hari. Dengan mengetahui stok di masing – masing tokonya Ayyaz bisa\n\ntahu apa yang harus dia lakukan. Jika salah satu tokonya mempunyai stok terendah, maka dia\n\nakan menambah stok di toko tersebut. Jika ada toko dengan stok yang sama maka dia akan\n\nmelakukan evaluasi terhadap toko – toko tersebut. Bantulah Ayyaz untuk membuat keputusan.\n\nFormat Input\n\nSatu baris berisi tiga bilangan bulat yang masing-masing mewakili jumlah stok kue di Toko A, Toko\n\nB, dan Toko C:\n\n• X pcs kue dari Toko A\n\n• Y pcs kue dari Toko B\n\n• Z pcs kue dari Toko C\n\nConstraints\n\n1 ≤ X, Y, Z ≤ 1012\n\nFormat Output\n\nCetak hasil keputusan Ayyaz terhadap masing-masing tokonya dengan format berikut:\n\n1. Stok terbanyak: Menampilkan toko dengan stok kue terbanyak.\n\n2. Stok terendah: Menampilkan toko dengan stok kue terendah.\n\n3. Stok sama: Jika ada dua atau lebih toko yang memiliki stok kue yang sama, tampilkan\n\njumlah stok tersebut. Jika tidak ada yang sama, tampilkan pesan \"Tidak ada stok yang\n\nsama.\"\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n80 120 100\n```\n\n### Contoh Keluaran 1\n```text\nStok terbanyak : 120\nStok terendah : 80\nTidak ada stok yang sama\n```\n\n### Contoh Masukan 2\n```text\n150 290 150\n```\n\n### Contoh Keluaran 2\n```text\nStok terbanyak : 290\nStok terendah : 150\nTerdapat toko dengan stok yang sama : 150\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-21.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "80 120 100\n",
+        "output": "Stok terbanyak : 120\nStok terendah : 80\nTidak ada stok yang sama\n",
+        "isSample": true
+      },
+      {
+        "input": "150 290 150\n",
+        "output": "Stok terbanyak : 290\nStok terendah : 150\nTerdapat toko dengan stok yang sama : 150\n",
+        "isSample": true
+      },
+      {
+        "input": "80 120 100\n",
+        "output": "Stok terbanyak : 120\nStok terendah : 80\nTidak ada stok yang sama\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-22",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-22",
+    "title": "Poker Hands Combo",
+    "statementMd": "# Poker Hands Combo\n\n**Batas Waktu:** 1s | **Batas Memori:** 256 MB\n\n## Deskripsi Soal\n\nDeskripsi Soal:\n\nSiang ini kamu ngerasa lagi gabut banget karena baru selesai kelas dan gaada jadwal kelas lagi hari ini.\n\nKamu pun memutuskan untuk ngadem ke lab Alpro mengingat cuaca Surabaya yang sangat amat panas\n\nsekali. Sesampainya di lab kamu bertemu dengan teman-teman kelasmu yang ternyata lagi ngadem\n\njuga sambil main kartu remi. Alhasil karena kamu gabut, kamu ikut bermain kartu remi walaupun tidak\n\nmengerti peraturannya. Dalam permainan ini, kamu akan diberikan 5 kartu dari deck remi standar.\n\nSetiap kartu memiliki jenis (Sekop, Hati, Wajik, Keriting) dan nilai (1-13; dimana Jack = 11, Queen = 12,\n\nKing = 13, AS = 1). Kamu harus menentukan apakah kartu-kartu tersebut membentuk salah satu dari\n\nkombinasi berikut: One Pair, Two Pair, Three of a Kind, Four of a Kind, Flush, atau Full House dengan\n\ndefinisi sebagai berikut.\n\n•\n\nOne Pair: 1 pasang kartu dengan nilai yang sama\n\n•\n\nTwo Pair: 2 pasang kartu dengan nilai yang sama\n\n•\n\nThree of a Kind: 3 kartu dengan nilai yang sama.\n\n•\n\nFour of a Kind: 4 kartu dengan nilai yang sama.\n\n•\n\nFlush: 5 kartu dengan jenis yang sama.\n\n•\n\nFull House: 3 kartu dengan nilai yang sama dan 2 kartu dengan nilai yang sama.\n\nPoin yang didapatkan setiap kombinasi kartu berbeda-beda yaitu dari urutan poin tertinggi adalah Four\n\nof a Kind, Full House, Flush, Three of a Kind, Two Pair, dan One Pair. Karena baru pertama kali main,\n\nkamu sering kali lupa definisi dari kombinasi yang ada, karena kamu adalah seorang mahasiswa teknik\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n7H\n7H\n7H\n7W\n8S\n```\n\n### Contoh Keluaran 1\n```text\nFour of a Kind\n```\n\n### Contoh Masukan 2\n```text\n1W\n5H\n3S\n4W\n8K\n```\n\n### Contoh Keluaran 2\n```text\nTidak ada kombinasi khusus\nNOTE: DILARANG MENGGUNAKAN PERULANGAN, ARRAY DAN LAIN SEBAGAINYA SELAIN DI MODUL\n0 DAN 1! Semangat:D\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-22.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 256,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "7H\n7H\n7H\n7W\n8S\n",
+        "output": "Four of a Kind\n",
+        "isSample": true
+      },
+      {
+        "input": "1W\n5H\n3S\n4W\n8K\n",
+        "output": "Tidak ada kombinasi khusus\nNOTE: DILARANG MENGGUNAKAN PERULANGAN, ARRAY DAN LAIN SEBAGAINYA SELAIN DI MODUL\n0 DAN 1! Semangat:D\n",
+        "isSample": true
+      },
+      {
+        "input": "7H\n7H\n7H\n7W\n8S\n",
+        "output": "Four of a Kind\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-23",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-23",
+    "title": "Seleksi Member JMK 48",
+    "statementMd": "# Seleksi Member JMK 48\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nLima orang kontestan bernama: Ambatron (A), Kumalala (K), Ucok (U), Rehan (R), dan\n\nFarhan (F) berkompetisi dalam ajang penyeleksian member baru JMK 48 Generasi ke-2.\n\nMr Waduh–manager JMK 48 sekaligus juri–memberikan sebuah tes kepada para\n\nkontestan.\n\nHasil tes masing-masing kontestan akan direkap; apabila nilai dari seorang kontestan\n\nlebih dari atau sebanding dengan rata-rata nilai seluruh kontestan maka dia\n\ndinyatakan lulus dengan kriteria minimal nilai 80, sebaliknya jika nilai lebih rendah.\n\nTerdapat lima integer A, K, U, R, F yang merupakan hasil rekap tes kontestan.\n\nApabila kontestan lulus seleksi, maka pada terminal akan dinyatakan:\n\n“(nama kontestan) Lulus!\\n”, urutan pernyataan lulus A→K→U→R→F. Sedangkan\n\napabila sebaliknya, maka dalam terminal tidak akan dinyatakan sama sekali.\n\nBatasan\n\n2\n\n0 ≤ 𝐴, 𝐾, 𝑈, 𝑅, 𝐹 ≤ 10\n\n90 75 85 80 90\n\nAmbatron Lulus!\n\nUcok Lulus!\n\nFarhan Lulus!\n\n100 100 100 100 100\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n90 75 85 80 90\n```\n\n### Contoh Keluaran 1\n```text\nAmbatron Lulus!\nUcok Lulus!\nFarhan Lulus!\n```\n\n### Contoh Masukan 2\n```text\n100 100 100 100 100\n```\n\n### Contoh Keluaran 2\n```text\nAmbatron Lulus!\nKumalala Lulus!\nUcok Lulus!\nRehan Lulus!\nFarhan Lulus!\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-23.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "90 75 85 80 90\n",
+        "output": "Ambatron Lulus!\nUcok Lulus!\nFarhan Lulus!\n",
+        "isSample": true
+      },
+      {
+        "input": "100 100 100 100 100\n",
+        "output": "Ambatron Lulus!\nKumalala Lulus!\nUcok Lulus!\nRehan Lulus!\nFarhan Lulus!\n",
+        "isSample": true
+      },
+      {
+        "input": "90 75 85 80 90\n",
+        "output": "Ambatron Lulus!\nUcok Lulus!\nFarhan Lulus!\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-24",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-24",
+    "title": "Slice It!",
+    "statementMd": "# Slice It!\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nSlice It!\n\nAuthor: Cathleen Gracia\n\nTime limit: 1 s\n\nTegar membeli sebuah pizza untuk dibagi bersama dengan teman-temannya. Setiap orang\n\nakan mendapatkan sepotong pizza. Bantu Tegar untuk menentukan berapa potongan minimal\n\nyang diperlukan untuk membagi pizza dengan adil kepada teman-temannya.\n\nPotongan yang valid bisa berupa:\n\n- Sebuah potongan yang diwakili oleh garis lurus yang menyentuh dua titik pada tepi\n\nlingkaran dan melewati pusatnya\n\n- Sebuah potongan yang diwakili oleh garis lurus yang menyentuh satu titik pada tepi\n\nlingkaran dan pusatnya\n\nConstraints:\n\n1 <= n <= 10^18\n\nInput:\n\nInput berupa n yang merupakan jumlah teman Tegar.\n\nOutput\n\nOutput berupa berapa potongan minimal yang dibutuhkan untuk menghasilkan n bagian\n\npizza.\n\nSimple Input 0\n\n4\n\n2\n\nSimple Input 1\n\n3\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n4\n```\n\n### Contoh Keluaran 1\n```text\n2\n```\n\n### Contoh Masukan 2\n```text\n3\n```\n\n### Contoh Keluaran 2\n```text\n3\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-24.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "4\n",
+        "output": "2\n",
+        "isSample": true
+      },
+      {
+        "input": "3\n",
+        "output": "3\n",
+        "isSample": true
+      },
+      {
+        "input": "4\n",
+        "output": "2\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-25",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-25",
+    "title": "Strategi Perang Char Aznable",
+    "statementMd": "# Strategi Perang Char Aznable\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDESKRIPSI\n\nPada perang satu tahun di Universal Century 0079, terdapat sang pahlawan perang bagi Zeon\n\nbernama Char Aznable. Pada suatu waktu, ia ditugaskan untuk memimpin pasukan Zeon\n\nmelawan pasukan EFSF, musuh bebuyutan Zeon pada saat itu yang memiliki Prototype Mobile\n\nSuit yang lebih canggih daripada punya Char Zaku, yaitu Gundam. Namun, dengan pengalaman\n\nChar yang jauh lebih banyak, ia mulai memikirkan strategi untuk melawan pasukan EFSF.\n\nSetelah mempertimbangkan dengan matang ia mendapat beberapa strategi dengan kondisi\n\nberikut.\n\n1. Strategi A: Jika jumlah pasukan Zeon lebih banyak/sama dengan pasukan EFSF dan\n\nGundam tidak hadir di peperangan.\n\n2. Strategi B: Jika jumlah pasukan Zeon lebih sedikit daripada pasukan EFSF dan Gundam\n\ntidak hadir dalam peperangan.\n\n3. Strategi C: Jika jumlah pasukan Zeon lebih banyak/sama dengan pasukan EFSF dan\n\nGundam hadir dalam peperangan.\n\n4. Strategi D: Jika jumlah pasukan Zeon lebih sedikit daripada pasukan EFSF dan Gundam\n\nhadir dalam peperangan.\n\nNamun, apabila kondisi Gundam tidak diketahui, maka pasukan Zeon akan menarik pasukannya\n\nmundur.\n\nPasukanZeon PasukanEFSF\n\nKondisiGundam\n\nPasukanZeon dan PasukanEFSF merupakan bilangan bulat yang menandakan banyak pasukan.\n\nKondisiGundam merupakan bilangan char antara ‘Y’ jika gundam hadir atau ‘N’ jika gundam\n\ntidak hadir.\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n48 56\nY\n```\n\n### Contoh Keluaran 1\n```text\n“Strategi D”\n```\n\n### Contoh Masukan 2\n```text\n100 50\nZ\n```\n\n### Contoh Keluaran 2\n```text\n“MUNDURRR!!!”\n\n− 1\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-25.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "48 56\nY\n",
+        "output": "“Strategi D”\n",
+        "isSample": true
+      },
+      {
+        "input": "100 50\nZ\n",
+        "output": "“MUNDURRR!!!”\n\n− 1\n",
+        "isSample": true
+      },
+      {
+        "input": "48 56\nY\n",
+        "output": "“Strategi D”\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-26",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-26",
+    "title": "Surip Kamen Rider",
+    "statementMd": "# Surip Kamen Rider\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nPoppin Gummy. Akan tetapi, jika diberikan 1.000.000.000.000 Poppin Gummy,\n\nSomad tetap tidak mau memakannya.\n\nTugas Surip adalah membuat program sehingga dia bisa tahu bahwa jumlah\n\nPoppin Gummy nya sudah mau dimakan oleh Mang Somad atau tidak.\n\nNote:\n\nREKURSI!\n\nDILARANG\n\nMENGGUNAKAN\n\nLOOP\n\nATAUPUN\n\nFUNGSI\n\nINPUT FORMAT\n\nx, jumlah Poppin Gummy yang diberikan\n\nCONSTRAINTS\n\n1 ≤ x ≤ 99.999.999.999.999.999\n\nOUTPUT FORMAT\n\nJika Somad mau memakan Poppin Gummy nya, print (“Juicy!! akU sUka\n\njUmlAh PalIndRome!!”)\n\nJika Somad tidak mau memakan Poppin Gummy nya, print (“Gamauuu!!,\n\nmending makan potato chip!!”)\n\nINPUT AND OUTPUT EXAMPLES\n\n12345678987654321\n\nJuicy!! akU sUka jUmlAh PalIndRome!!\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n12345678987654321\n```\n\n### Contoh Keluaran 1\n```text\nJuicy!! akU sUka jUmlAh PalIndRome!!\n```\n\n### Contoh Masukan 2\n```text\n1000000000000\n```\n\n### Contoh Keluaran 2\n```text\nGamauuu!!, mending makan potato chip!!\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-26.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "12345678987654321\n",
+        "output": "Juicy!! akU sUka jUmlAh PalIndRome!!\n",
+        "isSample": true
+      },
+      {
+        "input": "1000000000000\n",
+        "output": "Gamauuu!!, mending makan potato chip!!\n",
+        "isSample": true
+      },
+      {
+        "input": "12345678987654321\n",
+        "output": "Juicy!! akU sUka jUmlAh PalIndRome!!\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-27",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-27",
+    "title": "Talk",
+    "statementMd": "# Talk\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nAuthor: Rengga\n\nTime Limit: 1s\n\nMemory: 256 MB\n\n“Call you up on a Tuesday\n\nSay, \"What's up?\" Babe, it's too late\n\nWhy'd you have to be so complicated?\n\nComplicated”\n\nAwalnya, Ren dan Bea memiliki hubungan yang sangat erat, hanya saja\n\nsekarang mereka terhalang dengan kesibukan masing-masing. Hal ini membuat\n\nmereka saling asing sekarang. Ren memiliki tekad yang sangat besar untuk bisa\n\nberbincang kembali dengan Bea, namun jadwal mereka tidak selalu sama. Bantu Ren\n\nmenentukan hari apa mereka akan bertemu lagi, jika diketahui:\n\n● Day: Bilangan integer 0-6 yang mewakili hari dalam seminggu.\n\n(0 = Minggu, 1 = Senin, 2 = Selasa, dst.)\n\n● Bea: Tiap berapa hari Bea datang ke kampus.\n\n● Ren: Tiap berapa hari Ren datang ke kampus.\n\nBaris pertama diisi dengan 3 bilangan: Day, Bea, dan Ren.\n\nHari Ren dan Bea dapat bertemu lagi dalam bahasa Inggris.\n\n(Sunday, Monday, Tuesday, Wednesday, Thursday, Friday)\n\nBatasan\n\n0 ≤ Day ≤ 6\n\n1 ≤ Bea, Ren ≤ 7\n\nDILARANG KERAS MENGGUNAKAN ALGORITMA DILUAR MODUL 0 DAN MODUL 1\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n325\n```\n\n### Contoh Keluaran 1\n```text\nSaturday\n```\n\n### Contoh Masukan 2\n```text\n532\n```\n\n### Contoh Keluaran 2\n```text\nThursday\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-27.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "325\n",
+        "output": "Saturday\n",
+        "isSample": true
+      },
+      {
+        "input": "532\n",
+        "output": "Thursday\n",
+        "isSample": true
+      },
+      {
+        "input": "325\n",
+        "output": "Saturday\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-28",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-28",
+    "title": "TC",
+    "statementMd": "# TC\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nBudi adalah pemain baru di dunia game Gingin, di mana ia bisa memilih 5\n\nkarakter dengan elemen yang berbeda untuk membantunya dalam menjelajahi\n\ndungeon penuh tantangan. Setiap dungeon memiliki kelemahan terhadap\n\nelemen tertentu, dan tugas Budi adalah memilih tim yang tepat agar dapat\n\nmenaklukkan dungeon dengan mudah.\n\nKamu diminta tolong untuk membantu Budi memilih karakter yang sesuai\n\nberdasarkan elemen yang dibutuhkan dungeon tersebut. Berikut adalah daftar\n\nnama karakter dan elemen yang mereka miliki:\n\n●\n\n●\n\n●\n\n●\n\n●\n\n●\n\n●\n\nPyro - Ghost\n\nGeo - Meteor\n\nDendro - Clay\n\nAnemo - Zupzup\n\nHydro - Purina\n\nCyro - Queen\n\nElectro - Eternal\n\nPGDCE\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\nPGDCE\n```\n\n### Contoh Keluaran 1\n```text\nGhost Meteor Clay Queen Eternal\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-28.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "PGDCE\n",
+        "output": "Ghost Meteor Clay Queen Eternal\n",
+        "isSample": true
+      },
+      {
+        "input": "PGDCE\n",
+        "output": "Ghost Meteor Clay Queen Eternal\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-29",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-29",
+    "title": "Watch out for Bombs, Leo!",
+    "statementMd": "# Watch out for Bombs, Leo!\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nWatch out for Bombs, L eo!\n\nBy Rogelio Kenny Arisandi\n\nIn the heart of the serene GPT Whisperer Forest, Leo, the wise and\n\nvigilant guardian, was enjoying a peaceful evening when he received a\n\ndistressing call from his friend BonBon. BonBon, a brilliant mathematician,\n\nrevealed that rival forces had planted three bombs at specific locations\n\nwithin the forest. The bombs were marked with coordinates: the first at (X1,\n\nY1) with a radius of R1, the second at (X2, Y2) with a radius of R2, and the\n\nthird at (X3, Y3) with a radius of R3. Leo’s location was at (leoX, leoY).\n\nBonBon's calculations were crucial to determine how many of these bombs\n\ncould potentially hit Leo based on his current position.\n\nAs BonBon quickly calculated the distances between Leo’s location\n\nand the bomb sites, the calm of the forest turned to worry. Leo waited\n\nanxiously for the results to see if he was at risk from one, two, or all three\n\nbombs. The forest held its breath, depending on BonBon’s analysis to guide\n\nLeo and ensure his safety.\n\nCONSTRAINT:\n\n- 0 < X1, Y1, R1 < 100000\n\n- 0 < X2, Y2, R2 < 100000\n\n- 0 < X3, Y3, R3< 100000\n\n- 0 < leoX, leoY< 100000\n\nINPUTS:\n\nThe 3 bombs marked with (X1, Y1) and R1, (X2, Y2) and R2, (X3, Y3) and R3\n\nCoordinate and Leo’s X and Y coordinate marked by (leoX, leoY)\n\nOUTPUTS:\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n0 0 5\n5 0 5\n10 0 5\n2 0\n```\n\n### Contoh Keluaran 1\n```text\nLil bro run a bit quicker there are 2 bombs\n```\n\n### Contoh Masukan 2\n```text\n0 0 5\n5 0 5\n10 0 5\n50 50\n```\n\n### Contoh Keluaran 2\n```text\nWe chill\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-29.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "0 0 5\n5 0 5\n10 0 5\n2 0\n",
+        "output": "Lil bro run a bit quicker there are 2 bombs\n",
+        "isSample": true
+      },
+      {
+        "input": "0 0 5\n5 0 5\n10 0 5\n50 50\n",
+        "output": "We chill\n",
+        "isSample": true
+      },
+      {
+        "input": "0 0 10\n1 1 10\n2 2 10\n0 0\n",
+        "output": "LEO, YOU GOT 3 BOMBS ON YOUR\n",
+        "isSample": false
+      },
+      {
+        "input": "0 0 2\n10 10 2\n20 20 2\n1 0\n",
+        "output": "Meh only one bomb\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-30",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-30",
+    "title": "Welcome Praktikan",
+    "statementMd": "# Welcome Praktikan\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDeskripsi\n\nWelcome Praktikan !!\n\nKayla adalah mahasiswa baru di departemen Teknik Informatika ITS! Tentunya, Kayla\n\nsangatlah bangga karena bisa masuk ke ITS yang dikenal sangat prestisius. Ketika Kayla\n\nmengikuti gathering bersama dengan mahasiswa baru lainnya, ia berkenalan dengan sepuh\n\n– sepuh yang sudah belajar materi Informatika lebih dalam. Kayla tidak mau kalah, maka\n\ndari itu ia mulai membuka dan membaca buku – buku referensi.\n\nKayla menemukan sebuah sekuens yang menurut ia menarik yaitu The Lucas\n\nNumbers. Sekuens dimulai dengan dua bilangan. Bilangan pertama dan kedua secara\n\nberturut-turut adalah 2 dan 1. Secara formal, 𝐿(1) = 2 dan 𝐿(2) = 1. Untuk bilangan –\n\nbilangan selanjutnya, Kayla dapat menjumlahkan kedua bilangan sebelumnya. Sehingga\n\nuntuk bilangan Lucas ke – 𝑛 dimana 𝑛 > 2, dapat didefinisikan sebagai berikut!\n\n𝐿(𝑛) = 𝐿(𝑛 − 1) + 𝐿(𝑛 − 2)\n\nWELCOME PRAKTIKAN | Dasar Pemrograman 2024\n\nDi mana,\n\n𝐿(𝑛) adalah bilangan Lucas ke – 𝑛\n\n1, 3, 4, dan 7. Kita tahu bahwa 𝐿(1) = 2 dan 𝐿(2) = 1, sehingga\n\n𝐿(3) = 𝐿(2) + 𝐿(1) = 1 + 2 = 3\n\n𝐿(4) = 𝐿(3) + 𝐿(2) = 3 + 1 = 4\n\n𝐿(5) = 𝐿(4) + 𝐿(3) = 4 + 3 = 7\n\nNamun Kayla sekarang memiliki pertanyaan untuk kalian, diberikan dua bilangan\n\nbulat 𝐴 dan 𝐵. Temukan, banyaknya bilangan ganjil dan genap yang berada diantara rentang\n\nbilangan Lucas ke – A dan ke – B secara inklusif.\n\nBatasan\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n15\n```\n\n### Contoh Keluaran 1\n```text\nGanjil: 3 Genap: 2\n\nWELCOME PRAKTIKAN | Dasar Pemrograman 2024\n```\n\n### Contoh Masukan 2\n```text\n10 10\n```\n\n### Contoh Keluaran 2\n```text\nGanjil: 0 Genap: 1\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-30.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "15\n",
+        "output": "Ganjil: 3 Genap: 2\n\nWELCOME PRAKTIKAN | Dasar Pemrograman 2024\n",
+        "isSample": true
+      },
+      {
+        "input": "10 10\n",
+        "output": "Ganjil: 0 Genap: 1\n",
+        "isSample": true
+      },
+      {
+        "input": "15\n",
+        "output": "Ganjil: 3 Genap: 2\n\nWELCOME PRAKTIKAN | Dasar Pemrograman 2024\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "DP P1 all/PDF Archive/DP1-31",
+    "module": "DP P1 all",
+    "group": "PDF Archive",
+    "code": "DP1-31",
+    "title": "XOR, OR, Oren",
+    "statementMd": "# XOR, OR, Oren\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nia menatapmu. Matanya berkilau seolah meminta bantuan, berharap kamu bisa menjadi\n\ntangan dan otak yang akan mewujudkan kalkulator binernya.\n\nJadi, di sinilah kamu sekarang: dipilih oleh Kucing Oren untuk melanjutkan misinya. Dia\n\nmembutuhkanmu untuk membuat kalkulator biner ini bekerja dan memastikan apakah jumlah\n\ndigit biner hasil dari operasi-operasi tersebut ganjil atau genap. Apakah kamu siap untuk\n\nmengambil tantangan ini dan membantu Kucing Oren merealisasikan ide cemerlangnya?\n\nConstraint\n\nn, m < 4096\n\nBaris pertama berisi huruf antara a, b, c, d, dan e\n\nBaris kedua sesuai dengan pilihan huruf sebelumnya dan ketentuan soal di atas\n\nApabila hasil bilangan ganjil, keluarkan “Miawww, Kucing Oren kecewa :(”\n\nApabila hasil bilangan genap, keluarkan “Meonggg, Kucing Oren penguasa dunia”\n\nSimple Input 0\n\na\n\n43\n\nMiawww, Kucing Oren kecewa :(\n\nSimple Input 1\n\nb\n\n00\n\nMiawww, Kucing Oren kecewa :(\n\nSimple Input 2\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\na\n43\n```\n\n### Contoh Keluaran 1\n```text\nMiawww, Kucing Oren kecewa :(\n```\n\n### Contoh Masukan 2\n```text\nb\n00\n```\n\n### Contoh Keluaran 2\n```text\nMiawww, Kucing Oren kecewa :(\n```\n\n### Contoh Masukan 3\n```text\ne\n8\n```\n\n### Contoh Keluaran 3\n```text\nMeonggg, Kucing Oren penguasa dunia\n```\n\n",
+    "pdfPath": "storage/statements/DP-P1-all_DP1-31.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 100,
+    "testcases": [
+      {
+        "input": "a\n43\n",
+        "output": "Miawww, Kucing Oren kecewa :(\n",
+        "isSample": true
+      },
+      {
+        "input": "b\n00\n",
+        "output": "Miawww, Kucing Oren kecewa :(\n",
+        "isSample": true
+      },
+      {
+        "input": "e\n8\n",
+        "output": "Meonggg, Kucing Oren penguasa dunia\n",
+        "isSample": true
+      },
+      {
+        "input": "a\n43\n",
+        "output": "Miawww, Kucing Oren kecewa :(\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "FP/Practice/SPL",
+    "module": "FP",
+    "group": "Practice",
+    "code": "SPL",
+    "title": "Sistem Persamaan Linier (SPLDV)",
+    "statementMd": "# Sistem Persamaan Linier (SPLDV)\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDiberikan dua buah persamaan linear dua variabel (SPLDV) dalam bentuk:\n\n1.​ax + by = c\n\n2.​px + qy = r\n\nTugasmu adalah menentukan apakah sistem persamaan tersebut memiliki tepat SATU SOLUSI,\n\nBANYAK SOLUSI (garis berhimpit), atau TIDAK ADA SOLUSI (garis sejajar). Jika memiliki\n\ntepat satu solusi, cetak juga nilai x dan y dengan dua angka di belakang koma.\n\nFormat Input\n\nSebuah baris berisi 6 bilangan bulat a, b, c, p, q, r yang dipisahkan oleh spasi\n\n(-1.000 ≤ a,b,c,p,q,r ≤ 1.000).\n\nFormat Output\n\n●​ Jika berpotongan di satu titik, cetak \"SATU SOLUSI\" di baris pertama, dan nilai x serta\n\ny di baris kedua (dipisahkan spasi, 2 desimal).\n\n●​ Jika berhimpit, cetak \"BANYAK SOLUSI\".\n\n●​ Jika sejajar, cetak \"TIDAK ADA SOLUSI\".\n\n2 3 8 4 6 16\n\nBANYAK SOLUSI\n\n2 1 4 2 -1 0\n\nSATU SOLUSI\n\n1.00 2.00\n\nSistem Persamaan Linier (EN)\n\nGiven a system of two linear equations with two variables:\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n2 3 8 4 6 16\n```\n\n### Contoh Keluaran 1\n```text\nBANYAK SOLUSI\n```\n\n### Contoh Masukan 2\n```text\n2 1 4 2 -1 0\n```\n\n### Contoh Keluaran 2\n```text\nSATU SOLUSI\n1.00 2.00\n\n\fSistem Persamaan Linier (EN)\nGiven a system of two linear equations with two variables:\n3.​ax + by = c\n4.​px + qy = r\nYour task is to determine whether the system has ONE SOLUTION (intersecting lines),\nINFINITELY MANY SOLUTIONS (coincident lines), or NO SOLUTION (parallel lines). If it\nhas exactly one solution, print the values of x and y rounded to two decimal places.\nInput\n```\n\n### Contoh Masukan 3\n```text\n2 3 8 4 6 16\n```\n\n### Contoh Keluaran 3\n```text\nBANYAK SOLUSI\n```\n\n### Contoh Masukan 4\n```text\n2 1 4 2 -1 0\n```\n\n### Contoh Keluaran 4\n```text\nSATU SOLUSI\n1.00 2.00\n```\n\n",
+    "pdfPath": "storage/statements/FP_Practice_SPL.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 300,
+    "testcases": [
+      {
+        "input": "2 3 8 4 6 16\n",
+        "output": "BANYAK SOLUSI\n",
+        "isSample": true
+      },
+      {
+        "input": "2 1 4 2 -1 0\n",
+        "output": "SATU SOLUSI\n1.00 2.00\n\n\fSistem Persamaan Linier (EN)\nGiven a system of two linear equations with two variables:\n3.​ax + by = c\n4.​px + qy = r\nYour task is to determine whether the system has ONE SOLUTION (intersecting lines),\nINFINITELY MANY SOLUTIONS (coincident lines), or NO SOLUTION (parallel lines). If it\nhas exactly one solution, print the values of x and y rounded to two decimal places.\nInput\n",
+        "isSample": true
+      },
+      {
+        "input": "2 3 8 4 6 16\n",
+        "output": "BANYAK SOLUSI\n",
+        "isSample": true
+      },
+      {
+        "input": "2 1 4 2 -1 0\n",
+        "output": "SATU SOLUSI\n1.00 2.00\n",
+        "isSample": true
+      },
+      {
+        "input": "2 3 8 4 6 16\n",
+        "output": "BANYAK SOLUSI\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "FP/Practice/Catur",
+    "module": "FP",
+    "group": "Practice",
+    "code": "Catur",
+    "title": "Detektif Papan Catur",
+    "statementMd": "# Detektif Papan Catur\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nDiberikan posisi awal dan posisi akhir dalam notasi catur (kolom 'a'-'h', baris '1'-'8'). Tentukan\n\nbidak apa saja yang bisa melakukan gerakan tersebut! Setiap bidak harus melakukan pergerakan.\n\nFormat Input\n\nSatu baris berisi dua string posisi yang dipisahkan spasi (misal: a1 h8).\n\nFormat Output\n\nCetak nama bidak yang bisa melakukan gerakan tersebut (dipisahkan oleh spasi jika lebih dari\n\nsatu, urutannya KUDA, BENTENG, GAJAH, RATU). Jika tidak ada bidak yang bisa, cetak\n\n\"TIDAK ADA\".\n\nc3 e4\n\nKUDA\n\na1 a5\n\nBENTENG RATU\n\nDetektif Papan Catur (EN)\n\nOn an empty 8x8 chessboard, a piece moves from a starting position to an ending position in 1\n\nmove. There are 4 suspected pieces that might have made this move:\n\n●​ KUDA (KNIGHT): Moves in an 'L' shape.\n\n●​ BENTENG (ROOK): Moves straight vertically or horizontally any distance.\n\n●​ GAJAH (BISHOP): Moves diagonally any distance.\n\n●​ RATU (QUEEN): Combination of BENTENG and GAJAH movements.\n\nGiven the starting position and ending position in chess notation (columns 'a'-'h', rows '1'-'8'),\n\ndetermine which pieces could make that move! Each piece must make a move.\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\nc3 e4\n```\n\n### Contoh Keluaran 1\n```text\nKUDA\n```\n\n### Contoh Masukan 2\n```text\na1 a5\n```\n\n### Contoh Keluaran 2\n```text\nBENTENG RATU\n\n\fDetektif Papan Catur (EN)\nOn an empty 8x8 chessboard, a piece moves from a starting position to an ending position in 1\nmove. There are 4 suspected pieces that might have made this move:\n●​ KUDA (KNIGHT): Moves in an 'L' shape.\n●​ BENTENG (ROOK): Moves straight vertically or hori\n```\n\n### Contoh Masukan 3\n```text\nc3 e4\n```\n\n### Contoh Keluaran 3\n```text\nKUDA\n```\n\n### Contoh Masukan 4\n```text\na1 a5\n```\n\n### Contoh Keluaran 4\n```text\nBENTENG RATU\n```\n\n",
+    "pdfPath": "storage/statements/FP_Practice_Catur.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 300,
+    "testcases": [
+      {
+        "input": "c3 e4\n",
+        "output": "KUDA\n",
+        "isSample": true
+      },
+      {
+        "input": "a1 a5\n",
+        "output": "BENTENG RATU\n\n\fDetektif Papan Catur (EN)\nOn an empty 8x8 chessboard, a piece moves from a starting position to an ending position in 1\nmove. There are 4 suspected pieces that might have made this move:\n●​ KUDA (KNIGHT): Moves in an 'L' shape.\n●​ BENTENG (ROOK): Moves straight vertically or hori\n",
+        "isSample": true
+      },
+      {
+        "input": "c3 e4\n",
+        "output": "KUDA\n",
+        "isSample": true
+      },
+      {
+        "input": "a1 a5\n",
+        "output": "BENTENG RATU\n",
+        "isSample": true
+      },
+      {
+        "input": "c3 e4\n",
+        "output": "KUDA\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "FP/Practice/MesinWaktu",
+    "module": "FP",
+    "group": "Practice",
+    "code": "MesinWaktu",
+    "title": "Mesin Waktu Kalender",
+    "statementMd": "# Mesin Waktu Kalender\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nKamu sedang membuat mesin waktu dan harus memastikan koordinat tanggal yang dimasukkan\n\nvalid berdasarkan sistem kalender Masehi (Gregorian). Sebuah tahun disebut tahun kabisat\n\n(Februari 29 hari) jika tahun tersebut habis dibagi 400, ATAU habis dibagi 4 tetapi tidak habis\n\ndibagi 100. Selain bulan Februari, ingat kembali jumlah hari pada bulan-bulan lainnya.\n\nDiberikan input H (Hari), B (Bulan), dan T (Tahun). Tentukan apakah kombinasi tersebut\n\nmembentuk tanggal yang valid di dunia nyata!\n\nFormat Input\n\nSatu baris berisi 3 bilangan bulat H, B, T (1 ≤ H, B ≤ 100, 1 ≤ T ≤ 10.000).\n\nFormat Output\n\nCetak \"VALID\" jika tanggal masuk akal, dan \"TIDAK VALID\" jika tidak.\n\n29 2 2024\n\nVALID\n\n29 2 2100\n\nTIDAK VALID\n\nMesin Waktu Kalender (EN)\n\nYou are building a time machine and must ensure that the entered date coordinates are valid\n\nbased on the Gregorian calendar system. A year is considered a leap year (February has 29 days)\n\nif it is divisible by 400, OR divisible by 4 but not divisible by 100. Apart from February, recall\n\nthe number of days in the other months. Given the inputs H (Day), B (Month), and T (Year),\n\ndetermine whether the combination forms a valid real-world date!\n\nInput Format\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n29 2 2024\n```\n\n### Contoh Keluaran 1\n```text\nVALID\n```\n\n### Contoh Masukan 2\n```text\n29 2 2100\n```\n\n### Contoh Keluaran 2\n```text\nTIDAK VALID\n\n\fMesin Waktu Kalender (EN)\nYou are building a time machine and must ensure that the entered date coordinates are valid\nbased on the Gregorian calendar system. A year is considered a leap year (February has 29 days)\nif it is divisible by 400, OR divisible by 4 but not divisible by 100. Apart from February, recall\nthe number of days in the other months. Given the inputs H (Day), B (Month), and T (Year),\ndetermine whether the combination forms a valid real-world date!\nInput\n```\n\n### Contoh Masukan 3\n```text\n29 2 2024\n```\n\n### Contoh Keluaran 3\n```text\nVALID\n```\n\n### Contoh Masukan 4\n```text\n29 2 2100\n```\n\n### Contoh Keluaran 4\n```text\nTIDAK VALID\n```\n\n",
+    "pdfPath": "storage/statements/FP_Practice_MesinWaktu.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 300,
+    "testcases": [
+      {
+        "input": "29 2 2024\n",
+        "output": "VALID\n",
+        "isSample": true
+      },
+      {
+        "input": "29 2 2100\n",
+        "output": "TIDAK VALID\n\n\fMesin Waktu Kalender (EN)\nYou are building a time machine and must ensure that the entered date coordinates are valid\nbased on the Gregorian calendar system. A year is considered a leap year (February has 29 days)\nif it is divisible by 400, OR divisible by 4 but not divisible by 100. Apart from February, recall\nthe number of days in the other months. Given the inputs H (Day), B (Month), and T (Year),\ndetermine whether the combination forms a valid real-world date!\nInput\n",
+        "isSample": true
+      },
+      {
+        "input": "29 2 2024\n",
+        "output": "VALID\n",
+        "isSample": true
+      },
+      {
+        "input": "29 2 2100\n",
+        "output": "TIDAK VALID\n",
+        "isSample": true
+      },
+      {
+        "input": "29 2 2024\n",
+        "output": "VALID\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "FP/Practice/BengkelRobot",
+    "module": "FP",
+    "group": "Practice",
+    "code": "BengkelRobot",
+    "title": "Bengkel Robot",
+    "statementMd": "# Bengkel Robot\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nBengkel Robot\n\nAuthor: Mitra Partogi\n\nTime Limit\n\nMemory Limit\n\n1s\n\n256 MB\n\nSebuah bengkel robot memiliki N stasiun servis yang diberi nomor dari 1 sampai N . Setiap pagi,\n\nseluruh stasiun berada dalam keadaan kosong.\n\nSepanjang hari, robot datang satu per satu untuk menjalani servis. Jika masih ada stasiun yang\n\nkosong, robot akan ditempatkan pada stasiun kosong dengan nomor paling kecil. Jika semua stasiun\n\nsedang digunakan, robot harus menunggu di antrean depan bengkel. Robot yang datang lebih dahulu\n\nakan selalu mendapat giliran lebih dahulu ketika sebuah stasiun kembali kosong.\n\nSetiap stasiun servis memiliki tarif tertentu per satuan berat robot. Biaya servis sebuah robot\n\nadalah hasil perkalian antara berat robot dan tarif stasiun yang digunakannya. Lama servis tidak\n\nmemengaruhi biaya.\n\nPemilik bengkel mengetahui bahwa hari ini akan ada M robot yang datang, beserta urutan kedatangan\n\ndan selesainya servis setiap robot. Tentukan total pendapatan bengkel hari ini.\n\nBatasan\n\n1 ≤ N ≤ 100\n\n1 ≤ M ≤ 2000\n\n1 ≤ Rs ≤ 100\n\n1 ≤ Wk ≤ 10000\n\nBaris pertama berisi dua bilangan bulat N dan M .\n\nN baris berikutnya masing-masing berisi satu bilangan bulat Rs , yaitu tarif stasiun servis ke-s per\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n3 4\n2\n3\n5\n200\n100\n300\n800\n3\n2\n-3\n1\n4\n-4\n-2\n-1\n```\n\n### Contoh Keluaran 1\n```text\n5300\n```\n\n### Contoh Masukan 2\n```text\n2 4\n5\n2\n100\n500\n1000\n2000\n3\n1\n2\n4\n-1\n-3\n-2\n-4\n```\n\n### Contoh Keluaran 2\n```text\n16200\n```\n\n### Contoh Masukan 3\n```text\n3 4\n2\n3\n5\n200\n100\n300\n800\n3\n2\n-3\n1\n4\n-4\n-2\n-1\n```\n\n### Contoh Keluaran 3\n```text\n5300\n```\n\n### Contoh Masukan 4\n```text\n2 4\n5\n2\n100\n500\n1000\n2000\n3\n1\n2\n4\n-1\n-3\n-2\n-4\n```\n\n### Contoh Keluaran 4\n```text\n16200\n```\n\n",
+    "pdfPath": "storage/statements/FP_Practice_BengkelRobot.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 300,
+    "testcases": [
+      {
+        "input": "3 4\n2\n3\n5\n200\n100\n300\n800\n3\n2\n-3\n1\n4\n-4\n-2\n-1\n",
+        "output": "5300\n",
+        "isSample": true
+      },
+      {
+        "input": "2 4\n5\n2\n100\n500\n1000\n2000\n3\n1\n2\n4\n-1\n-3\n-2\n-4\n",
+        "output": "16200\n",
+        "isSample": true
+      },
+      {
+        "input": "3 4\n2\n3\n5\n200\n100\n300\n800\n3\n2\n-3\n1\n4\n-4\n-2\n-1\n",
+        "output": "5300\n",
+        "isSample": true
+      },
+      {
+        "input": "2 4\n5\n2\n100\n500\n1000\n2000\n3\n1\n2\n4\n-1\n-3\n-2\n-4\n",
+        "output": "16200\n",
+        "isSample": true
+      },
+      {
+        "input": "3 4\n2\n3\n5\n200\n100\n300\n800\n3\n2\n-3\n1\n4\n-4\n-2\n-1\n",
+        "output": "5300\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "FP/Practice/PengepunganGedangan",
+    "module": "FP",
+    "group": "Practice",
+    "code": "PengepunganGedangan",
+    "title": "Pengepungan Gedangan",
+    "statementMd": "# Pengepungan Gedangan\n\n**Batas Waktu:** 1s | **Batas Memori:** 4 MB\n\n## Deskripsi Soal\n\nProblem\n\nGedangan adalah sebuah kota berbentuk lingkaran sempurna ( (x-a)2 + (y-b)2 = R ) yang hidup\n\nnyaman, tentram, sejahtera, enak banget lah pokoknya. Akan tetapi pada suatu hari,\n\nKekaisaran Waru yang ingin menaklukkan Gedangan melakukan pengepungan terhadap Kota\n\nGedangan.\n\nKarena tembok Gedangan yang sangat tebal dan kokoh, Kekaisaran Waru-pun mengerahkan\n\nmeriam laser agar bisa menembus tembok tersebut. Tembakan dari meriam laser berbentuk\n\ngaris lurus (y = mx + c) dengan jangkauan tak hingga baik ke depan dan ke belakang.\n\nBantulah Gedangan untuk memprediksi apakah meriam laser akan mengenai tembok mereka!\n\nCatatan: Boleh menggunakan fungsi-fungsi dalam <math.h>\n\nCatatan 2: Akan diberikan 1 clue setiap 30 menit. Clue bisa diakses pada link dibawah\n\nhttps://drive.google.com/drive/folders/172qbEcmaXcMZWGoaylxKhw5fMxAvfvW?usp=drive_link\n\nInput Format\n\nBaris pertama berisi 3 bilangan bulat a, b, R (-250 <= a, b, R <= 250).\n\nBaris kedua berisi 2 bilangan bulat m, c (-250 <= m, c <= 250)\n\nPenjelasan:\n\n(a,b) -> Titik pusat lingkaran\n\nR -> kuadrat dari jari-jari lingkaran (r2)\n\nm & c -> nilai gradien dan konstanta dalam persamaan: y = mx + c\n\nOutput Format\n\n·\n\n·\n\n·\n\nJika tembakan hanya menyinggung lingkaran (hanya mengenai 1 titik), outputkan\n\n“Kegores dikit ga ngaruh.”\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n0 7 16\n2 -1\n```\n\n### Contoh Keluaran 1\n```text\nWe're cooked.\n```\n\n### Contoh Masukan 2\n```text\n0 7 16\n2 -4\n```\n\n### Contoh Keluaran 2\n```text\nWe're so back.\n```\n\n### Contoh Masukan 3\n```text\n0 0 2\n1 2\n```\n\n### Contoh Keluaran 3\n```text\nKegores dikit ga ngaruh.\n```\n\n",
+    "pdfPath": "storage/statements/FP_Practice_PengepunganGedangan.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 4,
+    "points": 300,
+    "testcases": [
+      {
+        "input": "0 7 16\n2 -1\n",
+        "output": "We're cooked.\n",
+        "isSample": true
+      },
+      {
+        "input": "0 7 16\n2 -4\n",
+        "output": "We're so back.\n",
+        "isSample": true
+      },
+      {
+        "input": "0 0 2\n1 2\n",
+        "output": "Kegores dikit ga ngaruh.\n",
+        "isSample": true
+      },
+      {
+        "input": "0 0 25\n0 5\n",
+        "output": "Kegores dikit ga ngaruh.\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 2/B/Pola",
+    "module": "Modul 2",
+    "group": "B",
+    "code": "Pola",
+    "title": "Pola Deret Matematika",
+    "statementMd": "# Pola Deret Matematika\n\n**Batas Waktu:** 1s | **Batas Memori:** 512 MB\n\n## Deskripsi Soal\n\nPak Dengklek menyiapkan 4 jenis pola deret matematika yang berbeda di papan tulis. Pak\n\nDengklek akan memberikan sebuah kode jenis deret T dan sebuah bilangan bulat N.\n\nTugasmu adalah menghitung hasil penjumlahan deret tersebut dengan cepat (tanpa menggunakan\n\nperulangan):\n\n●​ Jika T = 1 (Deret Ganjil): Hitung 1 + 3 + 5 + … sebanyak N suku.\n\n●​ Jika T = 2 (Deret Genap): Hitung 2 + 4 + 6 + … sebanyak N suku.\n\n●​ Jika T = 3 (Deret Kuadrat): Hitung 12 + 22 + 32 + … + N2.\n\n●​ Jika T = 4 (Deret Kubik): Hitung 13 + 23 + 33 + … + N3.\n\nJika nilai T yang dimasukkan di luar batas 1 sampai 4, tampilkan pesan error.\n\nFormat Input\n\nSatu baris berisi dua buah bilangan bulat T dan N yang dipisahkan spasi (1 ≤ T ≤ 10, 1 ≤\n\nN ≤ 10.000).\n\nFormat Output\n\nSatu baris berisi hasil penjumlahan deret dalam bentuk bilangan bulat. Jika T tidak valid (kurang\n\ndari 1 atau lebih dari 4), cetak \"MODE TIDAK VALID\".\n\n1 5\n\n25\n\n(Penjelasan: 1 + 3 + 5 + 7 + 9 = 25)\n\n3 4\n\n30\n\n(Penjelasan: 12 + 22 + 32 + 42 = 1 + 4 + 9 + 16 = 30)\n\n## Contoh Kasus\n\n### Contoh Masukan 1\n```text\n1 5\n```\n\n### Contoh Keluaran 1\n```text\n25\n(\n```\n\n### Contoh Masukan 2\n```text\n3 4\n```\n\n### Contoh Keluaran 2\n```text\n30\n(\n```\n\n### Contoh Masukan 3\n```text\n5 10\n```\n\n### Contoh Keluaran 3\n```text\nMODE TIDAK VALID\n\n\fPola (EN)\n\nPak Dengklek sets up 4 different types of mathematical sequence patterns on the whiteboard. Pak\nDengklek will provide a sequence type code T and an integer N.\nYour task is to calculate the sum of the sequence quickly (without using loops):\n●​ If T = 1 (Odd Numbers): Calculate 1 + 3 + 5 + … for N terms.\n●​ If T = 2 (Even Numbers): Calculate 2 + 4 + 6 + … for N terms.\n●​ If T = 3 (Square Numbers): Calculate 12 + 22 + 32 + … + N2.\n●​ If T = 4 (Cubic Numbers): Calculate 13 + 23 + 33 + … + N3.\nIf the value T is outside the range of 1 to 4, display an error message.\nInput\n```\n\n### Contoh Masukan 4\n```text\n1 5\n```\n\n### Contoh Keluaran 4\n```text\n25\n(\n```\n\n### Contoh Masukan 5\n```text\n3 4\n```\n\n### Contoh Keluaran 5\n```text\n30\n(\n```\n\n### Contoh Masukan 6\n```text\n5 10\n```\n\n### Contoh Keluaran 6\n```text\nMODE TIDAK VALID\n```\n\n",
+    "pdfPath": "storage/statements/Modul_2_B_Pola.pdf",
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "points": 200,
+    "testcases": [
+      {
+        "input": "1 5\n",
+        "output": "25\n(\n",
+        "isSample": true
+      },
+      {
+        "input": "3 4\n",
+        "output": "30\n(\n",
+        "isSample": true
+      },
+      {
+        "input": "5 10\n",
+        "output": "MODE TIDAK VALID\n\n\fPola (EN)\n\nPak Dengklek sets up 4 different types of mathematical sequence patterns on the whiteboard. Pak\nDengklek will provide a sequence type code T and an integer N.\nYour task is to calculate the sum of the sequence quickly (without using loops):\n●​ If T = 1 (Odd Numbers): Calculate 1 + 3 + 5 + … for N terms.\n●​ If T = 2 (Even Numbers): Calculate 2 + 4 + 6 + … for N terms.\n●​ If T = 3 (Square Numbers): Calculate 12 + 22 + 32 + … + N2.\n●​ If T = 4 (Cubic Numbers): Calculate 13 + 23 + 33 + … + N3.\nIf the value T is outside the range of 1 to 4, display an error message.\nInput\n",
+        "isSample": true
+      },
+      {
+        "input": "1 5\n",
+        "output": "25\n(\n",
+        "isSample": true
+      },
+      {
+        "input": "3 4\n",
+        "output": "30\n(\n",
+        "isSample": true
+      },
+      {
+        "input": "5 10\n",
+        "output": "MODE TIDAK VALID\n",
+        "isSample": true
+      },
+      {
+        "input": "1 5\n",
+        "output": "25\n(\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 1/A/SetA1",
+    "module": "Modul 1",
+    "group": "A",
+    "code": "SetA1",
+    "title": "Penjumlahan Sederhana (Two Sum)",
+    "points": 100,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Penjumlahan Sederhana (Two Sum)\n\nDiberikan dua bilangan bulat $A$ dan $B$. Cetak $A + B$.",
+    "testcases": [
+      {
+        "input": "3 5\n",
+        "output": "8\n",
+        "isSample": true
+      },
+      {
+        "input": "-10 25\n",
+        "output": "15\n",
+        "isSample": true
+      },
+      {
+        "input": "0 0\n",
+        "output": "0\n",
+        "isSample": false
+      },
+      {
+        "input": "1000000 2000000\n",
+        "output": "3000000\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 1/A/SetA2",
+    "module": "Modul 1",
+    "group": "A",
+    "code": "SetA2",
+    "title": "Konversi Suhu Celcius (Temperature Conversion)",
+    "points": 125,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Konversi Suhu Celcius\n\nKonversikan suhu $C$ derajat Celcius ke Fahrenheit, Reamur, dan Kelvin.",
+    "testcases": [
+      {
+        "input": "100\n",
+        "output": "212.00 80.00 373.15\n",
+        "isSample": true
+      },
+      {
+        "input": "0\n",
+        "output": "32.00 0.00 273.15\n",
+        "isSample": true
+      },
+      {
+        "input": "25\n",
+        "output": "77.00 20.00 298.15\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 1/B/SetB1",
+    "module": "Modul 1",
+    "group": "B",
+    "code": "SetB1",
+    "title": "Klasifikasi Segitiga (Triangle Classifier)",
+    "points": 150,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Klasifikasi Segitiga\n\nTentukan apakah segitiga SAMA SISI, SAMA KAKI, SEMBARANG, atau BUKAN SEGITIGA.",
+    "testcases": [
+      {
+        "input": "3 3 3\n",
+        "output": "SAMA SISI\n",
+        "isSample": true
+      },
+      {
+        "input": "5 5 8\n",
+        "output": "SAMA KAKI\n",
+        "isSample": true
+      },
+      {
+        "input": "3 4 5\n",
+        "output": "SEMBARANG\n",
+        "isSample": true
+      },
+      {
+        "input": "1 2 10\n",
+        "output": "BUKAN SEGITIGA\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 1/B/SetB2",
+    "module": "Modul 1",
+    "group": "B",
+    "code": "SetB2",
+    "title": "Tarif Paket Data (Data Usage Charge)",
+    "points": 175,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Tarif Paket Data\n\nHitung biaya pemakaian kuota data internet.",
+    "testcases": [
+      {
+        "input": "0.8\n",
+        "output": "Charge: 250\n",
+        "isSample": true
+      },
+      {
+        "input": "3.5\n",
+        "output": "Charge: 1000\n",
+        "isSample": true
+      },
+      {
+        "input": "15.0\n",
+        "output": "Charge: 2000\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 2/A/SetA1",
+    "module": "Modul 2",
+    "group": "A",
+    "code": "SetA1",
+    "title": "Deret Kelipatan FizzBuzz (FizzBuzz)",
+    "points": 150,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Deret Kelipatan FizzBuzz\n\nCetak 1 sampai N dengan aturan Fizz, Buzz, dan FizzBuzz.",
+    "testcases": [
+      {
+        "input": "5\n",
+        "output": "1\n2\nFizz\n4\nBuzz\n",
+        "isSample": true
+      },
+      {
+        "input": "15\n",
+        "output": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n",
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "id": "Modul 2/A/SetA2",
+    "module": "Modul 2",
+    "group": "A",
+    "code": "SetA2",
+    "title": "Uji Bilangan Prima (Primality Test)",
+    "points": 175,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Uji Bilangan Prima\n\nTentukan apakah bilangan N prima (PRIMA atau BUKAN PRIMA).",
+    "testcases": [
+      {
+        "input": "7\n",
+        "output": "PRIMA\n",
+        "isSample": true
+      },
+      {
+        "input": "1\n",
+        "output": "BUKAN PRIMA\n",
+        "isSample": true
+      },
+      {
+        "input": "97\n",
+        "output": "PRIMA\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 2/B/SetB1",
+    "module": "Modul 2",
+    "group": "B",
+    "code": "SetB1",
+    "title": "Pola Segitiga Angka (Floyd-like Triangle)",
+    "points": 200,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Pola Segitiga Angka\n\nCetak pola segitiga angka berukuran N.",
+    "testcases": [
+      {
+        "input": "4\n",
+        "output": "1\n1 2\n1 2 3\n1 2 3 4\n",
+        "isSample": true
+      },
+      {
+        "input": "2\n",
+        "output": "1\n1 2\n",
+        "isSample": true
+      },
+      {
+        "input": "5\n",
+        "output": "1\n1 2\n1 2 3\n1 2 3 4\n1 2 3 4 5\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 2/B/SetB2",
+    "module": "Modul 2",
+    "group": "B",
+    "code": "SetB2",
+    "title": "FPB Euclidean (Euclidean GCD)",
+    "points": 225,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# FPB Euclidean\n\nHitung faktor persekutuan terbesar dua bilangan.",
+    "testcases": [
+      {
+        "input": "48 18\n",
+        "output": "6\n",
+        "isSample": true
+      },
+      {
+        "input": "101 10\n",
+        "output": "1\n",
+        "isSample": true
+      },
+      {
+        "input": "100 100\n",
+        "output": "100\n",
+        "isSample": false
+      }
+    ]
+  },
+  {
+    "id": "Modul 3/A/SetA1",
+    "module": "Modul 3",
+    "group": "A",
+    "code": "SetA1",
+    "title": "Pembalikan Array dan Nilai Ekstrim",
+    "points": 200,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Pembalikan Array dan Nilai Ekstrim\n\nBalikkan urutan array dan cari nilai minimum dan maksimum.",
+    "testcases": [
+      {
+        "input": "5\n1 4 2 8 5\n",
+        "output": "5 8 2 4 1\n1 8\n",
+        "isSample": true
+      },
+      {
+        "input": "3\n10 10 10\n",
+        "output": "10 10 10\n10 10\n",
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "id": "Modul 3/A/SetA2",
+    "module": "Modul 3",
+    "group": "A",
+    "code": "SetA2",
+    "title": "Deteksi Palindrom Kata dan Kalimat",
+    "points": 225,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Deteksi Palindrom Kata dan Kalimat\n\nPeriksa apakah kata merupakan palindrom.",
+    "testcases": [
+      {
+        "input": "katak\n",
+        "output": "PALINDROM\n",
+        "isSample": true
+      },
+      {
+        "input": "domjudge\n",
+        "output": "BUKAN PALINDROM\n",
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "id": "Modul 3/B/SetB1",
+    "module": "Modul 3",
+    "group": "B",
+    "code": "SetB1",
+    "title": "Rotasi Matriks 90 Derajat Searah Jarum Jam",
+    "points": 250,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Rotasi Matriks 90 Derajat\n\nPutar matriks N x N sebesar 90 derajat searah jarum jam.",
+    "testcases": [
+      {
+        "input": "3\n1 2 3\n4 5 6\n7 8 9\n",
+        "output": "7 4 1\n8 5 2\n9 6 3\n",
+        "isSample": true
+      },
+      {
+        "input": "2\n1 2\n3 4\n",
+        "output": "3 1\n4 2\n",
+        "isSample": true
+      }
+    ]
+  },
+  {
+    "id": "Modul 3/B/SetB2",
+    "module": "Modul 3",
+    "group": "B",
+    "code": "SetB2",
+    "title": "Pemeriksa Anagram Kata",
+    "points": 275,
+    "timeLimit": 1,
+    "memoryLimit": 512,
+    "statementMd": "# Pemeriksa Anagram Kata\n\nPeriksa apakah dua kata adalah anagram.",
+    "testcases": [
+      {
+        "input": "listen silent\n",
+        "output": "ANAGRAM\n",
+        "isSample": true
+      },
+      {
+        "input": "hello world\n",
+        "output": "BUKAN ANAGRAM\n",
+        "isSample": true
+      }
+    ]
+  }
+]
