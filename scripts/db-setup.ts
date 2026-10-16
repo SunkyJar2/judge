@@ -21,7 +21,8 @@ async function main() {
 
   console.log('🚀 [DB Setup] Synchronizing database schema with target database...');
   try {
-    execSync('npx prisma db push --skip-generate --accept-data-loss', {
+    // Note: Prisma 7 removed `--skip-generate` (db push no longer runs generate).
+    execSync('npx prisma db push --accept-data-loss', {
       stdio: 'inherit',
       env: { ...process.env }
     });
@@ -123,7 +124,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Notice during db-setup:', err);
-  process.exit(0);
+  console.error('❌ [DB Setup] Failed:', err);
+  process.exit(1);
 });
 
