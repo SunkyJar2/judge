@@ -1,0 +1,10 @@
+TIDAK VALID
+
+
+Mesin Waktu Kalender (EN)
+You are building a time machine and must ensure that the entered date coordinates are valid
+based on the Gregorian calendar system. A year is considered a leap year (February has 29 days)
+if it is divisible by 400, OR divisible by 4 but not divisible by 100. Apart from February, recall
+the number of days in the other months. Given the inputs H (Day), B (Month), and T (Year),
+determine whether the combination forms a valid real-world date!
+Input

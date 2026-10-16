@@ -1,0 +1,348 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. BETTER AUTH & USER MODELS
+// ==========================================
+
+enum Role {
+  student
+  teacher
+  admin
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          Role      @default(student)
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  
+  // Materialized leaderboard counters for fast standings queries
+  totalPoints   Int       @default(0)
+  solvedCount   Int       @default(0)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  submissions   Submission[]
+  points        UserProblemPoints[]
+  ratings       ProblemRating[]
+  progress      UserProgress[]
+  threads       ForumThread[]
+  replies       ForumReply[]
+
+  friendshipsA  Friendship[] @relation("FriendshipUserA")
+  friendshipsB  Friendship[] @relation("FriendshipUserB")
+
+  @@index([totalPoints(sort: Desc), solvedCount(sort: Desc)])
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String
+  providerId            String
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?   @db.Text
+  password              String?   @db.Text // Argon2id hash
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model RateLimit {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  count       Int
+  lastRequest BigInt
+}
+
+// ==========================================
+// 2. DOMAIN & JUDGING MODELS
+// ==========================================
+
+enum Verdict {
+  IN_QUEUE
+  COMPILING
+  RUNNING
+  AC
+  WA
+  TLE
+  MLE
+  OLE
+  RTE
+  CE
+  ERROR
+}
+
+enum ValidationMode {
+  TOKEN_NORMALIZED
+  FLOAT_TOLERANCE
+  CUSTOM_VALIDATOR
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+}
+
+model Problem {
+  id                  String         @id // E.g., "Modul-1/A/SetA1"
+  module              String
+  group               String
+  code                String
+  title               String
+  statementMd         String?        @db.Text
+  statementPdfPath    String?
+  imageUrl            String?
+  timeLimit           Float          @default(1.0) // CPU time limit (seconds)
+  wallTimeLimit       Float          @default(3.0) // Wall clock limit (seconds)
+  memoryLimit         Int            @default(512) // Memory limit (MB)
+  points              Int            @default(100)
+  validationMode      ValidationMode @default(TOKEN_NORMALIZED)
+  floatTolerance      Float?         // E.g., 1e-6
+  validatorScriptPath String?
+  testcaseVersion     Int            @default(1)
+  isCustom            Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  testcases           TestCase[]
+  submissions         Submission[]
+  pointsAwarded       UserProblemPoints[]
+  ratings             ProblemRating[]
+  progress            UserProgress[]
+
+  @@unique([module, code])
+  @@index([module, group])
+}
+
+model TestCase {
+  id                  String   @id @default(cuid())
+  problemId           String
+  problem             Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  orderIndex          Int
+  isSample            Boolean  @default(false)
+  
+  // Content-addressed disk/storage paths
+  inputStoragePath    String
+  outputStoragePath   String
+  inputSha256         String   @db.VarChar(64)
+  outputSha256        String   @db.VarChar(64)
+  inputBytes          Int
+  outputBytes         Int
+
+  // Previews populated strictly for isSample == true (max 4 KB)
+  sampleInputPreview  String?  @db.Text
+  sampleOutputPreview String?  @db.Text
+
+  createdAt           DateTime @default(now())
+
+  testResults         SubmissionTestResult[]
+
+  @@unique([problemId, orderIndex])
+  @@index([problemId, orderIndex])
+}
+
+model Submission {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId       String
+  problem         Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  languageId      Int       // Judge0 Language ID
+  sourceCode      String    @db.Text // Enforced max 128 KB
+  verdict         Verdict   @default(IN_QUEUE)
+  passedTests     Int       @default(0)
+  totalTests      Int       @default(0)
+  maxExecutionMs  Int       @default(0)
+  maxMemoryUsedKb Int       @default(0)
+  compilerOutput  String?   @db.Text // Truncated at 16 KB
+  testcaseVersion Int       @default(1)
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  testResults     SubmissionTestResult[]
+  pointAward      UserProblemPoints?
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([problemId, verdict])
+  @@index([verdict, createdAt])
+}
+
+model SubmissionTestResult {
+  submissionId        String
+  testCaseId          String
+  judge0Token         String?    @unique
+  verdict             Verdict    @default(IN_QUEUE)
+  executionTimeMs     Int        @default(0)
+  memoryUsedKb        Int        @default(0)
+  
+  // Populated strictly for sample testcases; null for secret testcases
+  actualOutputPreview String?    @db.Text
+  errorSignal         String?
+
+  updatedAt           DateTime   @updatedAt
+
+  submission          Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  testCase            TestCase   @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@id([submissionId, testCaseId])
+  @@index([submissionId])
+}
+
+model UserProblemPoints {
+  userId        String
+  problemId     String
+  submissionId  String     @unique
+  points        Int
+  awardedAt     DateTime   @default(now())
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem       Problem    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  submission    Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, problemId])
+  @@index([userId])
+}
+
+model UserProgress {
+  userId     String
+  problemId  String
+  state      String   // "todo" | "attempted" | "solved"
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, problemId])
+}
+
+model ProblemRating {
+  userId     String
+  problemId  String
+  rating     Int      // 1 to 5
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem    Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, problemId])
+  @@index([problemId])
+}
+
+// Canonical Friendship: userAId is always lexicographically smaller than userBId
+model Friendship {
+  userAId     String
+  userBId     String
+  initiatorId String
+  status      FriendStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userA       User         @relation("FriendshipUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User         @relation("FriendshipUserB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  @@id([userAId, userBId])
+  @@index([userBId, status])
+}
+
+model ForumThread {
+  id         Int          @id @default(autoincrement())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category   String
+  title      String       @db.VarChar(200)
+  body       String       @db.Text
+  imageUrls  String[]     @default([])
+  isDeleted  Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  replies    ForumReply[]
+
+  @@index([isDeleted, createdAt(sort: Desc)])
+  @@index([category, isDeleted])
+}
+
+model ForumReply {
+  id         Int          @id @default(autoincrement())
+  threadId   Int
+  thread     ForumThread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body       String       @db.Text
+  imageUrls  String[]     @default([])
+  isDeleted  Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+
+  @@index([threadId, isDeleted, createdAt])
+}
+
+model SiteAnnouncement {
+  id         Int      @id @default(1)
+  text       String   @db.VarChar(500)
+  enabled    Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+}
+
+model HttpTrafficLog {
+  id         BigInt   @id @default(autoincrement())
+  method     String   @db.VarChar(10)
+  path       String   @db.VarChar(255)
+  statusCode Int
+  elapsedMs  Int
+  ipAddress  String   @db.VarChar(45)
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([path])
+}

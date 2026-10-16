@@ -1,0 +1,29 @@
+# Caddyfile: Automatic Let's Encrypt SSL & Reverse Proxy for Untitled Judge
+# Replace {$DOMAIN:localhost} with your actual domain or Azure public DNS (e.g. judge.yourdomain.com)
+
+{$DOMAIN:localhost} {
+    # Encode responses with gzip and zstd
+    encode gzip zstd
+
+    # Route all traffic to the SvelteKit application container
+    reverse_proxy web:3000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+

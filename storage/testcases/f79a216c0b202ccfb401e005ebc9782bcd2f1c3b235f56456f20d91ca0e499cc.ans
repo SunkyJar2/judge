@@ -1,0 +1,14 @@
+MODE TIDAK VALID
+
+
+Pola (EN)
+
+Pak Dengklek sets up 4 different types of mathematical sequence patterns on the whiteboard. Pak
+Dengklek will provide a sequence type code T and an integer N.
+Your task is to calculate the sum of the sequence quickly (without using loops):
+●​ If T = 1 (Odd Numbers): Calculate 1 + 3 + 5 + … for N terms.
+●​ If T = 2 (Even Numbers): Calculate 2 + 4 + 6 + … for N terms.
+●​ If T = 3 (Square Numbers): Calculate 12 + 22 + 32 + … + N2.
+●​ If T = 4 (Cubic Numbers): Calculate 13 + 23 + 33 + … + N3.
+If the value T is outside the range of 1 to 4, display an error message.
+Input
