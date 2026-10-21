@@ -76,21 +76,39 @@
       isExecuting = false;
     }
   }
+
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const textarea = e.target as HTMLTextAreaElement;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      sourceCode = sourceCode.substring(0, start) + '    ' + sourceCode.substring(end);
+
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+      }, 0);
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleRun();
+    }
+  }
 </script>
 
 <div class="space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-black text-white tracking-tight">Interactive Playground</h1>
-      <p class="text-sm text-slate-400 mt-1">Instant sandboxed code execution with custom stdin inputs.</p>
+      <h1 class="font-display text-3xl font-bold text-white tracking-tight">Interactive Playground</h1>
+      <p class="text-sm text-slate-400 mt-1 font-sans">Instant isolated sandboxed code execution with custom standard input.</p>
     </div>
 
-    <!-- Language Selector -->
+    <!-- Language Selector & Run Button -->
     <div class="flex items-center gap-3">
       <select
         value={selectedLangId}
         onchange={handleLanguageChange}
-        class="bg-slate-900 border border-slate-750 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 font-mono"
+        class="bg-[#05060a] border border-white/[0.08] text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-400 font-mono"
       >
         {#each languages as lang}
           <option value={lang.id}>{lang.name}</option>
@@ -101,13 +119,13 @@
         type="button"
         onclick={handleRun}
         disabled={isExecuting}
-        class="px-5 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/30 transition-all disabled:opacity-50 flex items-center gap-2"
+        class="px-5 py-2 rounded-xl text-xs font-display font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-xl shadow-indigo-600/30 transition-all disabled:opacity-50 flex items-center gap-2 border border-indigo-400/20"
       >
         {#if isExecuting}
           <span class="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
           Running...
         {:else}
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
           </svg>
           Run Code
@@ -117,7 +135,7 @@
   </div>
 
   {#if executionError}
-    <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono">
+    <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono">
       {executionError}
     </div>
   {/if}
@@ -125,49 +143,60 @@
   <!-- Split View: Source Code + (Stdin / Output) -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Code Editor Column -->
-    <div class="lg:col-span-7 bg-slate-900/60 rounded-2xl border border-slate-800 p-4 space-y-2 shadow-xl">
-      <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
-        <span>Source Code (max 128 KB)</span>
-        <button
-          onclick={() => navigator.clipboard.writeText(sourceCode)}
-          class="hover:text-white"
-        >
-          Copy
-        </button>
+    <div class="lg:col-span-7 glass-panel rounded-2xl p-5 space-y-3 shadow-2xl">
+      <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-white/[0.06] pb-2.5">
+        <span class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Source Code (max 128 KB)
+        </span>
+        <div class="flex items-center gap-3">
+          <span class="text-[10px] text-slate-500 font-mono">(Tab = 4 spaces)</span>
+          <button
+            onclick={() => navigator.clipboard.writeText(sourceCode)}
+            class="text-slate-400 hover:text-white px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]"
+          >
+            Copy
+          </button>
+        </div>
       </div>
 
       <textarea
         bind:value={sourceCode}
+        onkeydown={handleKeyDown}
         rows={22}
         spellcheck={false}
-        class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-500 resize-y"
+        class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl p-4 font-mono text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-400 resize-y selection:bg-indigo-600"
         placeholder="Type or paste code here..."
       ></textarea>
+
+      <div class="flex justify-between text-[11px] font-mono text-slate-500 pt-1">
+        <span>{sourceCode.split('\n').length} lines</span>
+        <span><kbd class="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-slate-300">Ctrl</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-slate-300">Enter</kbd> to run</span>
+      </div>
     </div>
 
     <!-- Input / Output Column -->
     <div class="lg:col-span-5 space-y-6">
       <!-- Standard Input -->
-      <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-4 space-y-2 shadow-xl">
-        <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
+      <div class="glass-panel rounded-2xl p-5 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-white/[0.06] pb-2.5">
           <span>Standard Input (stdin)</span>
-          <button onclick={() => stdinInput = ''} class="hover:text-white">Clear</button>
+          <button onclick={() => stdinInput = ''} class="text-slate-400 hover:text-white px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">Clear</button>
         </div>
         <textarea
           bind:value={stdinInput}
           rows={6}
           spellcheck={false}
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-y"
+          class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-400 resize-y"
           placeholder="Custom stdin..."
         ></textarea>
       </div>
 
       <!-- Execution Output -->
-      <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-4 space-y-3 shadow-xl">
-        <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
-          <span>Execution Results</span>
+      <div class="glass-panel rounded-2xl p-5 space-y-3 shadow-2xl">
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-white/[0.06] pb-2.5">
+          <span>Execution Telemetry</span>
           {#if result}
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold {result.status.id === 3 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border {result.status.id === 3 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'}">
               {result.status.description}
             </span>
           {/if}
@@ -175,37 +204,37 @@
 
         {#if !result && !isExecuting}
           <div class="py-12 text-center text-xs font-mono text-slate-500">
-            Click "Run Code" to execute in the sandbox.
+            Click "Run Code" or press Ctrl+Enter to test in sandbox.
           </div>
         {:else if isExecuting}
           <div class="py-12 text-center text-xs font-mono text-slate-400 flex flex-col items-center gap-3">
             <span class="w-6 h-6 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></span>
-            Executing in isolated container...
+            Evaluating code inside container...
           </div>
         {:else if result}
           <div class="space-y-3 font-mono text-xs">
             {#if result.stdout}
               <div>
-                <span class="text-slate-500 block mb-1">Standard Output:</span>
-                <pre class="p-3 bg-slate-950 rounded-xl text-emerald-300 overflow-x-auto border border-slate-800 max-h-48 leading-relaxed">{result.stdout}</pre>
+                <span class="text-slate-500 block mb-1 text-[11px]">Standard Output:</span>
+                <pre class="p-3 bg-[#05060a] rounded-xl text-emerald-300 overflow-x-auto border border-emerald-500/20 max-h-48 leading-relaxed">{result.stdout}</pre>
               </div>
             {/if}
 
             {#if result.stderr}
               <div>
-                <span class="text-slate-500 block mb-1">Standard Error:</span>
-                <pre class="p-3 bg-slate-950 rounded-xl text-rose-300 overflow-x-auto border border-rose-500/20 max-h-48 leading-relaxed">{result.stderr}</pre>
+                <span class="text-slate-500 block mb-1 text-[11px]">Standard Error:</span>
+                <pre class="p-3 bg-[#05060a] rounded-xl text-rose-300 overflow-x-auto border border-rose-500/20 max-h-48 leading-relaxed">{result.stderr}</pre>
               </div>
             {/if}
 
             {#if result.compile_output}
               <div>
-                <span class="text-slate-500 block mb-1">Compiler Output:</span>
-                <pre class="p-3 bg-slate-950 rounded-xl text-amber-300 overflow-x-auto border border-amber-500/20 max-h-48 leading-relaxed">{result.compile_output}</pre>
+                <span class="text-slate-500 block mb-1 text-[11px]">Compiler Diagnostics:</span>
+                <pre class="p-3 bg-[#05060a] rounded-xl text-amber-300 overflow-x-auto border border-amber-500/20 max-h-48 leading-relaxed">{result.compile_output}</pre>
               </div>
             {/if}
 
-            <div class="pt-2 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
+            <div class="pt-2 border-t border-white/[0.06] text-[11px] text-slate-400 flex justify-between tabular-nums">
               <span>Time: {result.time || '0'}s</span>
               <span>Memory: {result.memory || 0} KB</span>
             </div>

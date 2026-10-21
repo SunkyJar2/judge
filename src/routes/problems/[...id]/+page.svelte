@@ -192,13 +192,13 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <span class="font-mono text-base font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20">
+        <span class="font-mono text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
           {problem.code}
         </span>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">{problem.title}</h1>
+        <h1 class="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">{problem.title}</h1>
         {#if problem.isSolved}
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Solved ✓
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Solved
           </span>
         {/if}
       </div>
@@ -209,10 +209,10 @@
       <span class="px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-bold shadow-sm">
         {problem.points} Points
       </span>
-      <span class="px-3 py-1.5 rounded-xl bg-slate-900 text-slate-300 border border-slate-800">
+      <span class="px-3 py-1.5 rounded-xl bg-[#0e1017] text-slate-300 border border-white/[0.08]">
         CPU: {problem.timeLimit}s
       </span>
-      <span class="px-3 py-1.5 rounded-xl bg-slate-900 text-slate-300 border border-slate-800">
+      <span class="px-3 py-1.5 rounded-xl bg-[#0e1017] text-slate-300 border border-white/[0.08]">
         Mem: {problem.memoryLimit}MB
       </span>
     </div>
@@ -223,18 +223,18 @@
     <!-- Left Column: Statement, PDF Reader & Samples -->
     <div class="lg:col-span-6 space-y-6">
       <!-- Tabs Header: Statement vs PDF -->
-      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+      <div class="flex items-center justify-between border-b border-white/[0.06] pb-2">
         <div class="flex items-center gap-2">
           <button
             onclick={() => activeTab = 'statement'}
-            class="px-4 py-2 rounded-xl text-xs font-bold transition-all {activeTab === 'statement' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'}"
+            class="px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all {activeTab === 'statement' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-400/30' : 'bg-[#0f111a]/80 text-slate-400 hover:text-white border border-white/[0.06]'}"
           >
             Specification
           </button>
           {#if problem.hasPdf}
             <button
               onclick={() => activeTab = 'pdf'}
-              class="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 {activeTab === 'pdf' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'}"
+              class="px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 {activeTab === 'pdf' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-400/30' : 'bg-[#0f111a]/80 text-slate-400 hover:text-white border border-white/[0.06]'}"
             >
               <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -249,7 +249,7 @@
             href={pdfUrl}
             target="_blank"
             rel="noopener noreferrer"
-            class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 hover:underline"
+            class="text-xs text-indigo-400 hover:text-indigo-300 font-mono flex items-center gap-1 hover:underline"
           >
             Open in new tab &rarr;
           </a>
@@ -259,16 +259,16 @@
       <!-- Tab 1: Statement Markdown -->
       {#if activeTab === 'statement'}
         <div class="space-y-6">
-          <div class="prose max-w-none bg-slate-900/60 p-6 sm:p-8 rounded-2xl border border-slate-800 shadow-xl backdrop-blur-md">
+          <div class="prose max-w-none glass-panel p-6 sm:p-8 rounded-2xl shadow-xl">
             {#if problem.statementHtml}
               {@html problem.statementHtml}
             {:else}
               <div class="text-center py-8 space-y-3">
-                <p class="text-slate-400 italic">No markdown statement provided for this problem.</p>
+                <p class="text-slate-400 italic font-sans">No markdown statement provided for this problem.</p>
                 {#if problem.hasPdf}
                   <button
                     onclick={() => activeTab = 'pdf'}
-                    class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-colors"
+                    class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-mono font-bold hover:bg-indigo-500 transition-colors"
                   >
                     View Official PDF Specification &rarr;
                   </button>
@@ -281,7 +281,7 @@
           {#if problem.samples && problem.samples.length > 0}
             <div class="space-y-4">
               <div class="flex items-center justify-between">
-                <h2 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                <h2 class="font-display text-base font-bold text-white tracking-tight flex items-center gap-2">
                   <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
                   Sample Test Cases ({problem.samples.length})
                 </h2>
@@ -289,24 +289,24 @@
               </div>
 
               {#each problem.samples as sample, idx}
-                <div class="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3 shadow-lg">
+                <div class="p-5 rounded-2xl glass-panel space-y-3 shadow-lg">
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-bold text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
                       Sample #{idx + 1}
                     </span>
                     {#if idx === 0}
-                      <span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded font-mono">Used for quick sample tests</span>
+                      <span class="text-[10px] text-slate-400 bg-white/[0.04] border border-white/[0.06] px-2 py-0.5 rounded font-mono">Used for quick sample test</span>
                     {/if}
                   </div>
 
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
                     <div>
                       <span class="text-slate-400 font-semibold mb-1 block">Input:</span>
-                      <pre class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 overflow-x-auto text-slate-200 selection:bg-indigo-600">{sample.sampleInputPreview || '(empty)'}</pre>
+                      <pre class="bg-[#05060a] p-3.5 rounded-xl border border-white/[0.06] overflow-x-auto text-slate-200">{sample.sampleInputPreview || '(empty)'}</pre>
                     </div>
                     <div>
                       <span class="text-slate-400 font-semibold mb-1 block">Expected Output:</span>
-                      <pre class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 overflow-x-auto text-emerald-300 selection:bg-indigo-600">{sample.sampleOutputPreview || '(empty)'}</pre>
+                      <pre class="bg-[#05060a] p-3.5 rounded-xl border border-white/[0.06] overflow-x-auto text-emerald-300">{sample.sampleOutputPreview || '(empty)'}</pre>
                     </div>
                   </div>
                 </div>
@@ -316,13 +316,13 @@
         </div>
       {:else}
         <!-- Tab 2: Embedded PDF Viewer -->
-        <div class="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl space-y-2 p-2">
-          <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800 text-xs">
+        <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl space-y-2 p-2">
+          <div class="flex items-center justify-between px-3 py-2 border-b border-white/[0.06] text-xs font-mono">
             <span class="font-bold text-slate-300">Official Specification PDF</span>
             <a
               href={pdfUrl}
               download={`${problem.code}_${problem.title}.pdf`}
-              class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors font-semibold"
+              class="px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08] transition-colors font-semibold"
             >
               Download PDF
             </a>
@@ -330,7 +330,7 @@
           <iframe
             src={pdfUrl}
             title={`${problem.title} PDF`}
-            class="w-full h-[700px] rounded-xl border border-slate-850 bg-slate-950"
+            class="w-full h-[700px] rounded-xl border border-white/[0.06] bg-[#05060a]"
           ></iframe>
         </div>
       {/if}
@@ -338,21 +338,21 @@
 
     <!-- Right Column: Code Editor & Submission -->
     <div class="lg:col-span-6 space-y-6 sticky top-20">
-      <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-4 shadow-xl backdrop-blur-md">
+      <div class="glass-panel rounded-2xl p-6 space-y-4 shadow-2xl">
         <!-- Editor Header & Controls -->
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
           <div class="flex items-center gap-2">
-            <h2 class="text-base font-bold text-white">Solution Editor</h2>
+            <h2 class="font-display text-base font-bold text-white">Solution Editor</h2>
             <span class="text-[10px] text-slate-500 font-mono">(Tab = 4 spaces)</span>
           </div>
 
-          <!-- Controls: Language, Font Size, Reset, Copy -->
+          <!-- Controls: Language, Reset, Copy -->
           <div class="flex items-center gap-2">
             <!-- Language Selector -->
             <select
               value={selectedLangId}
               onchange={handleLanguageChange}
-              class="bg-slate-950 border border-slate-750 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 font-mono"
+              class="bg-[#05060a] border border-white/[0.08] text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-400 font-mono"
             >
               {#each languages as lang}
                 <option value={lang.id}>{lang.name}</option>
@@ -364,7 +364,7 @@
               type="button"
               onclick={handleCopyCode}
               title="Copy code to clipboard"
-              class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 transition-colors"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] border border-white/[0.08] transition-colors"
             >
               {#if copyFeedback}
                 <span class="text-[10px] text-emerald-400 font-bold px-1">Copied!</span>
@@ -380,7 +380,7 @@
               type="button"
               onclick={handleResetTemplate}
               title="Reset starter template"
-              class="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 border border-slate-800 transition-colors"
+              class="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-white/[0.06] border border-white/[0.08] transition-colors"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -396,7 +396,7 @@
             onkeydown={handleKeyDown}
             rows={19}
             spellcheck={false}
-            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono {editorFontSize} text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-y selection:bg-indigo-600"
+            class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl p-4 font-mono {editorFontSize} text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 resize-y selection:bg-indigo-600"
             placeholder="Write or paste your competitive solution here..."
           ></textarea>
         </div>
@@ -404,7 +404,7 @@
         <!-- Editor Footer Info -->
         <div class="flex items-center justify-between text-[11px] text-slate-500 font-mono">
           <span>{sourceCode.split('\n').length} lines &bull; {sourceCode.length} characters</span>
-          <span>Shortcut: <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">Ctrl</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">Enter</kbd> to submit</span>
+          <span><kbd class="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-slate-300">Ctrl</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08] text-slate-300">Enter</kbd> to submit</span>
         </div>
 
         {#if submitError}
@@ -419,7 +419,7 @@
             type="button"
             onclick={handleTestSample}
             disabled={isRunningPlayground || isSubmitting}
-            class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            class="px-4 py-2.5 rounded-xl text-xs font-mono font-semibold bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08] transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {#if isRunningPlayground}
               <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
@@ -437,7 +437,7 @@
             type="button"
             onclick={handleSubmit}
             disabled={isSubmitting || isRunningPlayground}
-            class="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-2"
+            class="px-6 py-2.5 rounded-xl text-xs font-display font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-xl shadow-indigo-600/30 transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-2 border border-indigo-400/20"
           >
             {#if isSubmitting}
               <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>

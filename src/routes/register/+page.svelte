@@ -34,64 +34,67 @@
 </script>
 
 <div class="max-w-md mx-auto py-12">
-  <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-8 space-y-6 shadow-2xl">
+  <div class="glass-panel rounded-2xl p-8 space-y-6 shadow-2xl">
     <div class="text-center space-y-2">
-      <h1 class="text-2xl font-black text-white">Create Contender Account</h1>
-      <p class="text-xs text-slate-400">Join the ranking board, solve problems and compete with friends.</p>
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-700 flex items-center justify-center mx-auto text-white font-display font-black text-sm border border-white/20 shadow-lg shadow-indigo-500/20">
+        DJ
+      </div>
+      <h1 class="font-display text-2xl font-bold text-white tracking-tight">Create Contender Account</h1>
+      <p class="text-xs text-slate-400 font-sans">Join the rankings, evaluate submissions, and track competitive tiers.</p>
     </div>
 
     {#if errorMsg}
-      <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono">
+      <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono">
         {errorMsg}
       </div>
     {/if}
 
     <form onsubmit={handleRegister} class="space-y-4">
       <div>
-        <label for="name" class="block text-xs font-semibold text-slate-300 mb-1">Full Name</label>
+        <label for="name" class="block text-xs font-mono text-slate-300 mb-1.5">Full Name</label>
         <input
           id="name"
           type="text"
           bind:value={name}
           required
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+          class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 font-sans"
           placeholder="Linus Torvalds"
         />
       </div>
 
       <div>
-        <label for="username" class="block text-xs font-semibold text-slate-300 mb-1">Handle / Username</label>
+        <label for="username" class="block text-xs font-mono text-slate-300 mb-1.5">Handle / Username</label>
         <input
           id="username"
           type="text"
           bind:value={username}
           required
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
+          class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 font-mono"
           placeholder="torvalds"
         />
       </div>
 
       <div>
-        <label for="email" class="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+        <label for="email" class="block text-xs font-mono text-slate-300 mb-1.5">Email Address</label>
         <input
           id="email"
           type="email"
           bind:value={email}
           required
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+          class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 font-sans"
           placeholder="linus@example.com"
         />
       </div>
 
       <div>
-        <label for="password" class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+        <label for="password" class="block text-xs font-mono text-slate-300 mb-1.5">Password</label>
         <input
           id="password"
           type="password"
           bind:value={password}
           required
           minlength={8}
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+          class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 font-sans"
           placeholder="Minimum 8 characters"
         />
       </div>
@@ -99,15 +102,15 @@
       <button
         type="submit"
         disabled={isLoading}
-        class="w-full py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
+        class="w-full py-3 rounded-xl text-xs font-display font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-xl shadow-indigo-600/30 transition-all disabled:opacity-50 border border-indigo-400/20"
       >
         {isLoading ? 'Creating Account...' : 'Complete Sign Up'}
       </button>
     </form>
 
-    <div class="text-center text-xs text-slate-500 pt-2 border-t border-slate-800/80">
+    <div class="text-center text-xs text-slate-400 pt-3 border-t border-white/[0.06] font-sans">
       Already have an account?
-      <a href="/login" class="text-indigo-400 hover:underline font-semibold ml-1">Log In</a>
+      <a href="/login" class="text-indigo-400 hover:text-indigo-300 font-semibold ml-1">Log In</a>
     </div>
   </div>
 </div>

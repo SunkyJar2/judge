@@ -1,25 +1,98 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans min-h-screen selection:bg-indigo-500 selection:text-white;
+    font-family: var(--font-sans);
+    background-color: #07080c;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -15%, rgba(99, 102, 241, 0.12), transparent 70%),
+      radial-gradient(ellipse 60% 30% at 100% 0%, rgba(139, 92, 246, 0.06), transparent 50%),
+      radial-gradient(ellipse 60% 30% at 0% 100%, rgba(59, 130, 246, 0.04), transparent 50%);
+    background-attachment: fixed;
+    color: #e2e8f0;
+    min-height: 100dvh;
+    letter-spacing: -0.011em;
   }
 
-  /* Custom Smooth Scrollbar */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
+  code, pre, kbd, samp {
+    font-family: var(--font-mono);
+  }
+
+  ::selection {
+    background-color: #6366f1;
+    color: #ffffff;
+  }
+
+  /* Custom Smooth Dark Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #090d16;
+    background: #07080c;
   }
   ::-webkit-scrollbar-thumb {
-    background: #1e293b;
+    background: rgba(255, 255, 255, 0.12);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+    background: rgba(255, 255, 255, 0.22);
   }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Glass Surface Utilities */
+.glass-panel {
+  background: rgba(13, 16, 23, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-panel-interactive {
+  background: rgba(13, 16, 23, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-interactive:hover {
+  background: rgba(18, 22, 32, 0.85);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 16px 36px -10px rgba(0, 0, 0, 0.7),
+    0 0 20px -5px rgba(99, 102, 241, 0.15),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 /* Beautiful Markdown Problem Statement Styling */

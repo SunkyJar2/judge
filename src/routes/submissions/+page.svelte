@@ -31,70 +31,70 @@
 <div class="space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-black text-white tracking-tight">Recent Submissions</h1>
-      <p class="text-sm text-slate-400 mt-1">Live stream of judging evaluations across the platform.</p>
+      <h1 class="font-display text-3xl font-bold text-white tracking-tight">Recent Submissions</h1>
+      <p class="text-sm text-slate-400 mt-1 font-sans">Live telemetry feed of sandboxed code evaluations across the judge.</p>
     </div>
   </div>
 
   {#if submissions.length === 0}
-    <div class="text-center py-16 bg-slate-900/40 rounded-2xl border border-slate-800 text-slate-400 font-medium">
+    <div class="text-center py-16 glass-panel rounded-2xl text-slate-400 font-sans">
       No submissions recorded yet. Be the first to solve a problem!
     </div>
   {:else}
-    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+    <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl">
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono">
-          <thead class="bg-slate-850/80 border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+          <thead class="bg-[#07090e]/80 border-b border-white/[0.06] text-slate-400 uppercase tracking-wider text-[11px]">
             <tr>
-              <th class="py-3 px-4"># ID</th>
-              <th class="py-3 px-4">User</th>
-              <th class="py-3 px-4">Problem</th>
-              <th class="py-3 px-4">Verdict</th>
-              <th class="py-3 px-4">Tests</th>
-              <th class="py-3 px-4">Time</th>
-              <th class="py-3 px-4">Memory</th>
-              <th class="py-3 px-4 text-right">Submitted</th>
+              <th class="py-3.5 px-4"># ID</th>
+              <th class="py-3.5 px-4">User</th>
+              <th class="py-3.5 px-4">Problem</th>
+              <th class="py-3.5 px-4">Verdict</th>
+              <th class="py-3.5 px-4">Tests</th>
+              <th class="py-3.5 px-4">Time</th>
+              <th class="py-3.5 px-4">Memory</th>
+              <th class="py-3.5 px-4 text-right">Submitted</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800/60">
+          <tbody class="divide-y divide-white/[0.04]">
             {#each submissions as sub}
               {@const badge = getVerdictBadge(sub.verdict)}
-              <tr class="hover:bg-slate-800/40 transition-colors">
-                <td class="py-3 px-4">
+              <tr class="hover:bg-white/[0.03] transition-colors group">
+                <td class="py-3.5 px-4">
                   <a href={`/submissions/${sub.id}`} class="text-indigo-400 hover:underline font-bold">
                     #{sub.id.slice(-6)}
                   </a>
                 </td>
 
-                <td class="py-3 px-4 font-sans text-sm text-slate-200">
+                <td class="py-3.5 px-4 font-sans text-xs text-slate-200">
                   <span class="font-medium">{sub.user.name || sub.user.email}</span>
                 </td>
 
-                <td class="py-3 px-4 font-sans text-sm font-semibold text-white">
-                  <a href={getProblemHref(sub.problem.id)} class="hover:underline hover:text-indigo-400 transition-colors">
+                <td class="py-3.5 px-4 font-display font-semibold text-white">
+                  <a href={getProblemHref(sub.problem.id)} class="hover:text-indigo-300 transition-colors">
                     {sub.problem.title}
                   </a>
                 </td>
 
-                <td class="py-3 px-4">
-                  <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold border {badge.class}">
+                <td class="py-3.5 px-4">
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold border {badge.class}">
                     {badge.text}
                   </span>
                 </td>
 
-                <td class="py-3 px-4 text-slate-300">
+                <td class="py-3.5 px-4 text-slate-300 tabular-nums">
                   {sub.passedTests} / {sub.totalTests}
                 </td>
 
-                <td class="py-3 px-4 text-slate-300">
+                <td class="py-3.5 px-4 text-slate-300 tabular-nums">
                   {sub.maxExecutionMs} ms
                 </td>
 
-                <td class="py-3 px-4 text-slate-300">
+                <td class="py-3.5 px-4 text-slate-300 tabular-nums">
                   {Math.round(sub.maxMemoryUsedKb / 1024)} MB
                 </td>
 
-                <td class="py-3 px-4 text-slate-500 text-right">
+                <td class="py-3.5 px-4 text-slate-500 text-right text-[11px]">
                   {new Date(sub.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </td>
               </tr>
