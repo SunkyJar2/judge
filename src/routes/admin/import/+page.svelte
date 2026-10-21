@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getProblemHref } from '#lib/utils';
+
   let selectedFile = $state<File | null>(null);
   let moduleOverride = $state('');
   let groupOverride = $state('');
@@ -83,7 +85,7 @@
       </p>
       <div class="pt-2">
         <a
-          href={`/problems/${encodeURIComponent(importSuccess.problem.id)}`}
+          href={getProblemHref(importSuccess.problem.id)}
           class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
         >
           View Problem &rarr;

@@ -1,11 +1,17 @@
 <script lang="ts">
   import type { PageProps } from './$types';
+  import { getProblemHref } from '#lib/utils';
 
   let { data }: PageProps = $props();
   const profile = $derived(data.profile);
   const solvedProblems = $derived(data.solvedProblems);
-  let acceptedFriends = $state(data.acceptedFriends);
-  let incomingRequests = $state(data.incomingRequests);
+  let acceptedFriends = $state<any[]>([]);
+  let incomingRequests = $state<any[]>([]);
+
+  $effect(() => {
+    acceptedFriends = [...data.acceptedFriends];
+    incomingRequests = [...data.incomingRequests];
+  });
 
   let targetIdentifier = $state('');
   let friendActionMessage = $state<string | null>(null);
@@ -201,7 +207,7 @@
             {#each solvedProblems as sp}
               <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between hover:border-slate-700 transition-colors">
                 <div>
-                  <a href={`/problems/${encodeURIComponent(sp.problemId)}`} class="text-sm font-semibold text-white hover:text-indigo-400 hover:underline">
+                  <a href={getProblemHref(sp.problemId)} class="text-sm font-semibold text-white hover:text-indigo-400 hover:underline">
                     {sp.title}
                   </a>
                   <p class="text-[10px] text-slate-500 font-mono mt-0.5">

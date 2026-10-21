@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageProps } from './$types';
+  import { getProblemHref } from '#lib/utils';
 
   let { data }: PageProps = $props();
   const submissions = $derived(data.submissions);
@@ -70,7 +71,7 @@
                 </td>
 
                 <td class="py-3 px-4 font-sans text-sm font-semibold text-white">
-                  <a href={`/problems/${encodeURIComponent(sub.problem.id)}`} class="hover:underline">
+                  <a href={getProblemHref(sub.problem.id)} class="hover:underline hover:text-indigo-400 transition-colors">
                     {sub.problem.title}
                   </a>
                 </td>

@@ -1,16 +1,26 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import type { PageProps } from './$types';
+  import { getProblemHref } from '#lib/utils';
 
   let { data }: PageProps = $props();
-  const initial = data.submission;
+  const initial = $derived(data.submission);
 
-  let verdict = $state(initial.verdict);
-  let passedTests = $state(initial.passedTests);
-  let totalTests = $state(initial.totalTests);
-  let maxExecutionMs = $state(initial.maxExecutionMs);
-  let maxMemoryUsedKb = $state(initial.maxMemoryUsedKb);
-  let testResults = $state(initial.testResults);
+  let verdict = $state('IN_QUEUE');
+  let passedTests = $state(0);
+  let totalTests = $state(0);
+  let maxExecutionMs = $state(0);
+  let maxMemoryUsedKb = $state(0);
+  let testResults = $state<any[]>([]);
+
+  $effect(() => {
+    verdict = data.submission.verdict;
+    passedTests = data.submission.passedTests;
+    totalTests = data.submission.totalTests;
+    maxExecutionMs = data.submission.maxExecutionMs;
+    maxMemoryUsedKb = data.submission.maxMemoryUsedKb;
+    testResults = data.submission.testResults;
+  });
 
   let eventSource: EventSource | null = null;
 
@@ -96,7 +106,7 @@
       <div class="space-y-1">
         <span class="text-xs font-mono text-slate-500">Submission #{initial.id.slice(-8)}</span>
         <h1 class="text-2xl font-black text-white">
-          <a href={`/problems/${encodeURIComponent(initial.problem.id)}`} class="hover:underline">
+          <a href={getProblemHref(initial.problem.id)} class="hover:underline hover:text-indigo-400 transition-colors">
             {initial.problem.title}
           </a>
         </h1>

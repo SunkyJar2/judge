@@ -21,7 +21,16 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   secret: process.env.BETTER_AUTH_SECRET || "default_dev_secret_key_needs_to_be_at_least_32_characters_long",
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5173",
+  baseURL: process.env.BETTER_AUTH_URL || (process.env.PUBLIC_ORIGIN ? (process.env.PUBLIC_ORIGIN.startsWith('http') ? process.env.PUBLIC_ORIGIN : `https://${process.env.PUBLIC_ORIGIN}`) : (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5173"))),
+  trustedOrigins: [
+    'https://judge-theta-ten.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:5173',
+    ...(process.env.PUBLIC_ORIGIN ? [process.env.PUBLIC_ORIGIN] : []),
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+    ...(process.env.VERCEL_PROJECT_PRODUCTION_URL ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`] : []),
+  ],
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
