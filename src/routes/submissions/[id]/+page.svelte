@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import type { PageProps } from './$types';
   import { getProblemHref } from '#lib/utils';
+  import CodeEditor from '#lib/components/CodeEditor.svelte';
 
   let { data }: PageProps = $props();
   const initial = $derived(data.submission);
@@ -216,7 +217,12 @@
         </button>
       </div>
 
-      <pre class="bg-[#05060a] p-4 rounded-xl text-xs font-mono text-slate-200 overflow-x-auto border border-white/[0.06] leading-relaxed max-h-96">{initial.sourceCode}</pre>
+      <CodeEditor
+        readonly={true}
+        value={initial.sourceCode}
+        languageId={initial.languageId}
+        minHeight="260px"
+      />
     </div>
   {/if}
 </div>

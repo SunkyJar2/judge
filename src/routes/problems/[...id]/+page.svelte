@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageProps } from './$types';
   import { getProblemApiHref } from '#lib/utils';
+  import CodeEditor from '#lib/components/CodeEditor.svelte';
 
   let { data }: PageProps = $props();
   const problem = $derived(data.problem);
@@ -389,17 +390,15 @@
           </div>
         </div>
 
-        <!-- Code Textarea -->
-        <div class="relative">
-          <textarea
-            bind:value={sourceCode}
-            onkeydown={handleKeyDown}
-            rows={19}
-            spellcheck={false}
-            class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl p-4 font-mono {editorFontSize} text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/20 resize-y selection:bg-indigo-600"
-            placeholder="Write or paste your competitive solution here..."
-          ></textarea>
-        </div>
+        <!-- Syntax-Highlighted Code Editor -->
+        <CodeEditor
+          bind:value={sourceCode}
+          languageId={selectedLangId}
+          fontSize={editorFontSize}
+          minHeight="460px"
+          placeholder="Write or paste your competitive solution here..."
+          onRunOrSubmit={handleSubmit}
+        />
 
         <!-- Editor Footer Info -->
         <div class="flex items-center justify-between text-[11px] text-slate-500 font-mono">

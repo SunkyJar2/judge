@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PageProps } from './$types';
+  import CodeEditor from '#lib/components/CodeEditor.svelte';
 
   let { data }: PageProps = $props();
   const languages = $derived(data.languages);
@@ -159,14 +160,14 @@
         </div>
       </div>
 
-      <textarea
+      <CodeEditor
         bind:value={sourceCode}
-        onkeydown={handleKeyDown}
-        rows={22}
-        spellcheck={false}
-        class="w-full bg-[#05060a] border border-white/[0.08] rounded-xl p-4 font-mono text-xs text-slate-200 leading-relaxed focus:outline-none focus:border-indigo-400 resize-y selection:bg-indigo-600"
+        languageId={selectedLangId}
+        fontSize="text-xs"
+        minHeight="480px"
         placeholder="Type or paste code here..."
-      ></textarea>
+        onRunOrSubmit={handleRun}
+      />
 
       <div class="flex justify-between text-[11px] font-mono text-slate-500 pt-1">
         <span>{sourceCode.split('\n').length} lines</span>
